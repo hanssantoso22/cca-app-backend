@@ -27,13 +27,22 @@ const EventSchema = mongoose.Schema ({
         type: String,
         max: 200,
     }],
+    startTime: {
+        type: Date,
+        required: true,
+    },
+    endTime: {
+        type: Date,
+        required: true,
+    },
     done: Boolean,
     link: String,
     description: {
         type: String,
     },
     registeredApplicants: [{
-        type: String
+        type: ObjectID,
+        ref: 'UserModel'
     }],
     tags: [{
         type: String

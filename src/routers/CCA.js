@@ -14,9 +14,9 @@ router.post("/CCAs/create", authAdmin, async (req,res)=>{
     res.status(400)
   }
 })
-router.get("/CCAs",auth, async (req,res)=>{
+router.get("/CCAs",authAdmin, async (req,res)=>{
   const color = req.params.color
-  const CCAs = await CCA.find({color})
+  const CCAs = await CCA.find()
   res.send(CCAs)
 })
 

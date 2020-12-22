@@ -1,3 +1,4 @@
+const { ObjectID } = require('mongodb')
 const mongoose = require('mongoose')
 
 const AnnouncementSchema = mongoose.Schema ({
@@ -6,20 +7,20 @@ const AnnouncementSchema = mongoose.Schema ({
         required: true,
     },
     organizer: {
-        type: String,
+        type: ObjectID,
+        ref: 'CCAModel',
         required: true,
     },
     visibility: {
-        type: String,
+        type: [String,ObjectID],
         required: true,
     },
     content: {
         type: String,
     },
-    timestamp: {
-        type: Date,
-        default: Date.now,
-    },
+}, {
+    collection: 'announcements',
+    timestamps: true,
 })
 
 module.exports = mongoose.model('AnnouncementModel', AnnouncementSchema)

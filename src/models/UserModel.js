@@ -1,3 +1,4 @@
+require('dotenv').config()
 const { ObjectID } = require('mongodb')
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
@@ -11,13 +12,13 @@ const UserSchema = new mongoose.Schema ({
     password: {
         type: String,
         required: true,
-        validate: {
-            validator: function (string) {
-                //Password is minimum 8 chars, contains 1 capital letter, 1 small letter, 1 unique char
-                var regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
-                return regex.test(string)
-            }
-        }
+        // validate: {
+        //     validator: function (string) {
+        //         //Password is minimum 8 chars, contains 1 capital letter, 1 small letter, 1 unique char
+        //         var regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+        //         return regex.test(string)
+        //     }
+        // }
     },
     email: {
         type: String,
@@ -36,6 +37,7 @@ const UserSchema = new mongoose.Schema ({
             required: true,
         }
     }],
+    resetToken: String,
     role: {
         type: String,
         enum: ['admin','manager','student']
@@ -47,19 +49,22 @@ const UserSchema = new mongoose.Schema ({
 
     },
     joinedCCA: [{
-        type: ObjectID
+        type: ObjectID,
+        ref: 'CCAModel'
     }],
     managedCCA: [{
-        type: ObjectID
-    }],
-    pastEvents: [{
-        type: Object
-    }],
-    registeredEvents: [{
-        type: ObjectID
+        type: ObjectID,
+        ref: 'CCAModel'
     }],
 
 }, {collection: 'users'})
+
+//Virtuals
+UserSchema.virtual('pastEvents',{
+    ref: 'EventModel',
+    localField: '_id',
+    foreignField: 'user'
+})
 
 //Hash password each time password field of a document is modified
 UserSchema.pre('save', async function (next) {
@@ -85,11 +90,21 @@ UserSchema.statics.findByCredentials = async (email, password) => {
 //To give a token for a user and store the token in the database
 UserSchema.methods.getAuthToken = async function () {
     const user = this
-    const token = jwt.sign({ _id: user._id.toString(), role: user.role, managedCCA: user.managedCCA },'privatekey')
+    const token = jwt.sign({ _id: user._id.toString(), role: user.role, managedCCA: user.managedCCA },process.env.PRIVATE_KEY)
     user.tokens = user.tokens.concat({ token })
     await user.save()
 
     return token
+}
+
+UserSchema.methods.getResetCode = async function () {
+    const user = this
+    const code = Math.floor(Math.random()*900000+100000)
+    const token = jwt.sign({email: user.email, resetCode: code},process.env.FORGET_PASS_PRIVATE_KEY,{expiresIn: '5m'})
+    user.resetToken = token
+    await user.save()
+    return { code, token }
+    
 }
 
 UserSchema.methods.publicProfile = function () {
