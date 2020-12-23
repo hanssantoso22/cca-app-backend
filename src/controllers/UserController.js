@@ -37,8 +37,7 @@ exports.logoutAll = async (req,res) => {
 }
 
 exports.signup = async (req,res) => {
-    const user = new User(req.body)
-
+    const user = new User({...req.body, role:'student'})
     try {
         await user.save()
         const token = await user.getAuthToken()
@@ -145,5 +144,15 @@ exports.editUser = async (req,res) => {
     }
     catch (e) {
         res.status(400).send(e)
+    }
+}
+exports.pastEvent = async (req,res) => {
+    try {
+        await req.user.populate({
+            path:'pastEvents'
+        }).execPopulate()
+        res.send(req.user.pastEvents)
+    } catch (e) {
+        res.status(400).send('Error happened')
     }
 }

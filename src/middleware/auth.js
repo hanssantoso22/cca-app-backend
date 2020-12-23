@@ -1,6 +1,7 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
 const User = require('../models/UserModel')
+const CCA = require('../models/CCAModel')
 const mongoose = require('mongoose')
 
 const auth = async (req,res,next) => {
@@ -21,44 +22,27 @@ const auth = async (req,res,next) => {
 }
 const authAdmin = async (req,res,next) => {
     try {
-        const token = req.header('Authorization').replace('Bearer ','')
-        const decoded = jwt.verify(token,process.env.PRIVATE_KEY)
-        const user = await User.findOne({ _id: decoded._id, 'tokens.token': token })
-        if (!user || user.role!='admin') {
+        if (req.user.role!='admin') {
             throw new Error()
         }
-        console.log(req)
-        req.user = user
-
         next()
     } catch (e) {
-        res.status(401).send('Not authenticated')
+        res.status(401).send('Not authenticated (admin)')
     }
 }
 const authManager = async (req,res,next) => {
     try {
-        const token = req.header('Authorization').replace('Bearer ','')
-        const CCA = mongoose.Types.ObjectId(req.params.cca) //objectID type or string type??
-        const decoded = jwt.verify(token,process.env.PRIVATE_KEY)
-        const user = await User.findOne({ _id: decoded._id, 'tokens.token': token })
-        const isManager = () => {
-            if (user.role == 'manager') {
-                if (user.managedCCA.includes(CCA)) {
-                    return true
-                }
-                else return false
+        if (req.user.role == 'manager') {
+            const retrieveCCA = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id)})
+            if (!retrieveCCA.managers.includes(req.user._id)) {
+                throw new Error()
             }
-            else return false
         }
-        if (!user || !isManager ) {
-            throw new Error()
-        }
-        console.log(req)
-        req.user = user
+        else throw new Error()
 
         next()
     } catch (e) {
-        res.status(401).send('Not authenticated')
+        res.status(401).send('Not authenticated (manager)')
     }
 }
 

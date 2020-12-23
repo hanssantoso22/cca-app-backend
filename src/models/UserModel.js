@@ -48,20 +48,12 @@ const UserSchema = new mongoose.Schema ({
     specialization: {
 
     },
-    joinedCCA: [{
-        type: ObjectID,
-        ref: 'CCAModel'
-    }],
-    managedCCA: [{
-        type: ObjectID,
-        ref: 'CCAModel'
-    }],
 
 }, {collection: 'users'})
 
 //Virtuals
 UserSchema.virtual('pastEvents',{
-    ref: 'EventModel',
+    ref: 'PastEventModel',
     localField: '_id',
     foreignField: 'user'
 })
