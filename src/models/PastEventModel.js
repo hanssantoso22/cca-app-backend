@@ -6,6 +6,10 @@ const PastEventSchema = new mongoose.Schema ({
         type: ObjectID,
         ref: 'UserModel'
     },
+    eventID: {
+        type: ObjectID,
+        ref: 'EventModel'
+    },
     eventName: {
         type: String
     },
@@ -14,9 +18,12 @@ const PastEventSchema = new mongoose.Schema ({
     },
     startTime: Date,
     endTime: Date,
+    read: {
+        type: Boolean,
+        default: false
+    },
 
 }, {collection: 'pastEvents'})
-
 
 const PastEvent = mongoose.model('PastEventModel',PastEventSchema)
 module.exports = PastEvent

@@ -37,7 +37,7 @@ exports.logoutAll = async (req,res) => {
 }
 
 exports.signup = async (req,res) => {
-    const user = new User({...req.body, role:'student'})
+    const user = new User(req.body)
     try {
         await user.save()
         const token = await user.getAuthToken()

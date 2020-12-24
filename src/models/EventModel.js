@@ -12,9 +12,6 @@ const EventSchema = mongoose.Schema ({
         required: true,
         ref: 'CCAModel'
     },
-    members: [{
-        type: String,
-    }],
     allowedParticipants: [{
         type: ObjectID,
         ref: 'CCAModel'
@@ -35,7 +32,10 @@ const EventSchema = mongoose.Schema ({
         type: Date,
         required: true,
     },
-    done: Boolean,
+    done: {
+        type: Boolean,
+        default: false
+    },
     link: String,
     description: {
         type: String,
@@ -50,5 +50,20 @@ const EventSchema = mongoose.Schema ({
 }, {
     collection: 'events'
 })
+
+EventSchema.methods.getEventDetails = function (registrationAllowed) {
+    const event = this
+    const details = event.toObject()
+    details.canRegister = registrationAllowed
+    return details
+}
+EventSchema.methods.publicEventDetails = function (...deletedFields) {
+    const event = this
+    const eventObject = event.toObject()
+    deletedFields.forEach((deletedField)=> {
+        delete eventObject[deletedField]
+    })
+    return eventObject
+}
 
 module.exports = mongoose.model('EventModel',EventSchema)

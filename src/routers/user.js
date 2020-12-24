@@ -7,8 +7,11 @@ const { login,
     updatePassword, 
     getProfile, 
     editProfile, 
-    editUser,
-    pastEvent } = require('../controllers/UserController')
+    editUser } = require('../controllers/UserController')
+const { getPastEvents,
+    pastEventDetails,
+    pastEventNotAttended,
+    pastEventReview } = require('../controllers/EventController')
 const { auth, authAdmin, authResetToken } = require('../middleware/auth')
 const router = express.Router()
 
@@ -32,7 +35,11 @@ router.patch('/users/profile/edit', auth, editProfile)
 //Edit user for admin (can assign a user as CCA managers)
 router.patch('/users/:id', auth, authAdmin, editUser)
 
-router.get('/users/pastEvents', auth, pastEvent)
+//Controller below are defined in EventController
+router.get('/users/pastEvents', auth, getPastEvents)
+router.get('/users/pastEvents/:id', auth, pastEventDetails)
+router.delete('/users/pastEvents/:id/delete', auth, pastEventNotAttended)
+router.patch('/users/pastEvents/:id/submitReview', auth, pastEventReview)
 
 
 module.exports = router

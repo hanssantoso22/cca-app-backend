@@ -32,4 +32,12 @@ CCASchema.virtual('createdEvents',{
     foreignField: 'organizer'
 })
 
-module.exports = mongoose.model('CCAModel',CCASchema)
+CCASchema.statics.getJoinedCCA = async (userID) => {
+    const joinedCCA = await CCA.distinct('_id',{ members: mongoose.Types.ObjectId(userID) })
+    const joinedCCAid = joinedCCA.map((stringID)=>mongoose.Types.ObjectId(stringID))
+    return joinedCCAid //returns an array of object id
+}
+
+const CCA = mongoose.model('CCAModel',CCASchema)
+
+module.exports = CCA

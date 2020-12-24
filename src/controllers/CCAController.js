@@ -65,6 +65,9 @@ exports.editMember = async (req,res)=>{
 exports.editManager = async (req,res)=> {
     try {
       const updated = await CCA.findByIdAndUpdate(req.params.id,req.body,{new:true})
+      const currentCCA = await CCA.findById(mongoose.Types.ObjectId(req.params.id))
+      currentCCA.members = [...currentCCA.members,...req.body.managers]
+      await currentCCA.save()
       req.body.managers.forEach(async (manager)=>{
           const user = await User.findById(manager)
           if (user.role =='student') {
@@ -100,4 +103,22 @@ exports.resetManager = async (req,res)=> {
     catch (e) {
       res.status(404).send('Error')
     }
-} 
+}
+exports.getPastEvents = async (req,res) => {
+    try {
+        const Event = require('../models/EventModel')
+        const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id)})
+        res.send(events)
+    } catch (e) {
+        res.status(400).send('Events not found!')
+    }
+}
+exports.getPastAnnouncements = async (req,res) => {
+    try {
+        const Announcement = require('../models/AnnouncementModel')
+        const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id)})
+        res.send(announcements)
+    } catch (e) {
+        res.status(400).send('Announcements not found!')
+    }
+}
