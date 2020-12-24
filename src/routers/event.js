@@ -1,5 +1,6 @@
 const { getEvents,
     getEventDetails,
+    registerEvent,
     createEvent,
     editEvent, 
     markEventDone} = require('../controllers/EventController')
@@ -10,6 +11,7 @@ const router = express.Router()
 //General access
 router.get('/events', auth, getEvents)
 router.get('/events/:id', auth, getEventDetails)
+router.post('/events/:id/register', auth, registerEvent)
 
 //Manager access only
 router.post('/events/create', auth, authManager, createEvent)

@@ -41,6 +41,18 @@ exports.getEventDetails = async (req,res) => {
         res.status.send('Event not found')
     }
 }
+exports.registerEvent = async () => {
+    try {
+        const event = await Event.findOne({
+            _id: mongoose.Types.ObjectId(req.params.id)
+        })
+        event.registeredApplicants = event.registeredApplicants.concat (req.user._id)
+        await event.save()
+        res.send(event)
+    } catch (e) {
+        res.status(400).send('Registration failed')
+    }
+}
 exports.createEvent = async (req,res) => {
     try {
         const newEvent = new Event(req.body)
