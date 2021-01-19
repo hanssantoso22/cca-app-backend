@@ -17,6 +17,7 @@ const CCASchema = mongoose.Schema ({
     color: {
         type: String,
     },
+    description: String
 }, {
     collection: 'ccas'
 })

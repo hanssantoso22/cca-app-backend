@@ -44,12 +44,11 @@ const UserSchema = new mongoose.Schema ({
         default: 'student'
     },
     year: {
-    
+        type: String
     },
-    specialization: {
-
-    },
-
+    faculty: {
+        type: String  
+    }
 }, {collection: 'users'})
 
 //Virtuals
@@ -105,7 +104,6 @@ UserSchema.methods.publicProfile = function () {
     const userObject = user.toObject()
     delete userObject.password
     delete userObject.tokens
-    delete userObject.role
     return userObject
 }
 

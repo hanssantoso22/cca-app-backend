@@ -13,7 +13,7 @@ const EventSchema = mongoose.Schema ({
         ref: 'CCAModel'
     },
     allowedParticipants: [{
-        type: ObjectID,
+        type: [String, ObjectID],
         ref: 'CCAModel'
     }],
     visibility: [{
@@ -31,6 +31,12 @@ const EventSchema = mongoose.Schema ({
     endTime: {
         type: Date,
         required: true,
+    },
+    venue: {
+        type: String,
+    },
+    link: {
+        type: String,
     },
     done: {
         type: Boolean,

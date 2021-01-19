@@ -1,11 +1,13 @@
 const User = require('../models/UserModel')
+const mongoose = require('mongoose')
+const CCA = require('../models/CCAModel')
 const mailgun_api_key = '57f4aab49c9bf268c05302053c6f3979-b6190e87-7a098fb0'
 const mailgun_domain = 'sandbox7aefcf19208f4a9680c981dcd021202b.mailgun.org'
 const mailgun = require('mailgun-js')({apiKey: mailgun_api_key, domain: mailgun_domain})
 
 exports.login = async (req,res) => {
     try {
-        const user = await User.findByCredentials(req.body.email,req.body.password)
+        const user = await User.findByCredentials(req.body.email.toLowerCase(),req.body.password)
         const token = await user.getAuthToken()
         res.send({ user: user.publicProfile(), token })
     }
@@ -101,12 +103,55 @@ exports.updatePassword = async (req,res) => {
         res.status(400).send('Failed')
     }
 }
-exports.getProfile = async (req,res) => {
+exports.getAllUsers = async (req,res) => {
     try {
-        res.send(req.user.publicProfile())
+        const users = await User.find({role: {$ne: 'admin'}})
+        res.send(users)
     }
     catch (e) {
         res.status(400).send(e)
+    }
+}
+exports.getProfile = async (req,res) => {
+    try {
+        const joinedCCA = await CCA.getJoinedCCA(req.user._id)
+        const joinedCCAs = await Promise.all(joinedCCA.map(async (CCAid) => {
+            const CCAlocal = await CCA.findOne({_id: CCAid})
+            return CCAlocal.ccaName
+        }))
+        req.user.joinedCCAs = joinedCCAs
+        res.send(req.user)
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
+}
+exports.getProfileBasic = async (req,res) => {
+    try {
+        res.send(req.user)
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
+}
+exports.getUserProfile = async (req,res) => {
+    try {
+        const user = await User.findOne({_id: mongoose.Types.ObjectId(req.params.id)})
+        const returnedObject = user.toObject()
+        const joinedCCA = await CCA.getJoinedCCA(req.params.id)
+        const joinedCCAs = await Promise.all(joinedCCA.map(async (CCAid) => {
+            const CCAlocal = await CCA.findOne({_id: CCAid})
+            return CCAlocal.ccaName
+        }))
+        const managedCCA = await CCA.find ({
+            managers: mongoose.Types.ObjectId(req.params.id)
+        })
+        const managedCCAs = managedCCA.map(cca => cca.ccaName)
+        returnedObject.joinedCCAs = joinedCCAs
+        returnedObject.managedCCAs = managedCCAs
+        res.send(returnedObject)
+    } catch (err) {
+        res.status(400).send('Retrieve user profile error!')
     }
 }
 exports.editProfile = async (req,res) => {
@@ -144,6 +189,14 @@ exports.editUser = async (req,res) => {
     }
     catch (e) {
         res.status(400).send(e)
+    }
+}
+exports.deleteUser = async (req,res) => {
+    try {
+        const deletedUser = await User.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})
+        res.send(deletedUser)
+    } catch (err) {
+        res.status(400).send('Delete user fail!')
     }
 }
 exports.pastEvent = async (req,res) => {

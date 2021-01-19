@@ -74,7 +74,7 @@ exports.editEvent = async (req,res) => {
 exports.markEventDone = async (req,res) => {
     try {
         const doneEvent = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),{ done: true },{ new: true })
-        doneEvent.registeredApplicants.forEach ((registeredApplicant) => {
+        doneEvent.registeredApplicants.forEach (async(registeredApplicant) => {
             const newPastEvent = new PastEvent ({
                 user: registeredApplicant,
                 eventID: doneEvent._id,
