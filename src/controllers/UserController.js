@@ -1,5 +1,9 @@
+require('dotenv').config()
 const User = require('../models/UserModel')
 const mongoose = require('mongoose')
+const multer = require('multer')
+const AWS = require('aws-sdk')
+const sharp = require('sharp')
 const CCA = require('../models/CCAModel')
 const mailgun_api_key = '57f4aab49c9bf268c05302053c6f3979-b6190e87-7a098fb0'
 const mailgun_domain = 'sandbox7aefcf19208f4a9680c981dcd021202b.mailgun.org'
@@ -39,7 +43,7 @@ exports.logoutAll = async (req,res) => {
 }
 
 exports.signup = async (req,res) => {
-    const user = new User(req.body)
+    const user = new User({...req.body, avatar: null})
     try {
         await user.save()
         const token = await user.getAuthToken()
@@ -119,8 +123,14 @@ exports.getProfile = async (req,res) => {
             const CCAlocal = await CCA.findOne({_id: CCAid})
             return CCAlocal.ccaName
         }))
-        req.user.joinedCCAs = joinedCCAs
-        res.send(req.user)
+        const managedCCA = await CCA.find ({
+            managers: mongoose.Types.ObjectId(req.user._id)
+        })
+        const managedCCAs = managedCCA.map(cca => cca.ccaName)
+        const returnObject = req.user.toObject()
+        returnObject.joinedCCAs = joinedCCAs
+        returnObject.managedCCAs = managedCCAs
+        res.send(returnObject)
     }
     catch (e) {
         res.status(400).send(e)
@@ -154,15 +164,45 @@ exports.getUserProfile = async (req,res) => {
         res.status(400).send('Retrieve user profile error!')
     }
 }
+exports.uploadAvatar = multer({
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|heic)/)) {
+            cb(new Error('Unsupported file type!'))
+        }
+        cb(undefined, true)
+    },
+})
 exports.editProfile = async (req,res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['fname','password']
+    const allowedUpdates = ['password','year','faculty']
     const isValidOperation = updates.every((update)=>allowedUpdates.includes(update))
     if (!isValidOperation) {
         return res.status(400).send({ error: 'Invalid updates!' })
     }
     try {
-        updates.forEach((update)=> req.user[update] = req.body[update])
+        updates.forEach(async (update)=> {
+            req.user[update] = req.body[update]
+        })
+        const adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+
+
+        /* UPLOADING IMAGE TO AMAZON S3 */
+        // const s3 = new AWS.S3({
+        //     accessKeyId: process.env.AWS_ID,
+        //     secretAccessKey: process.env.AWS_SECRET
+        // })
+        // const params = {
+        //     Bucket: process.env.AWS_BUCKET_NAME,
+        //     Key: `avatars/${req.user.email}-avatar.png`,
+        //     Body: adjustedBuffer
+        // }
+        // const uploadPromise = s3.upload(params).promise()
+        // const uploadedData = await uploadPromise
+        // req.user['avatar'] = uploadedData.Location
+
+        /* STORING IMAGE BUFFER IN DATABASE */
+        req.user['avatar'] = adjustedBuffer
+
         await req.user.save()
         res.send(req.user)
     }

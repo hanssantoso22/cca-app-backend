@@ -48,6 +48,9 @@ const UserSchema = new mongoose.Schema ({
     },
     faculty: {
         type: String  
+    },
+    avatar: {
+        type: Buffer
     }
 }, {collection: 'users'})
 

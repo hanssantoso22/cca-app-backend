@@ -8,10 +8,11 @@ const { login,
     getAllUsers,  
     getProfile,
     getProfileBasic,
-    getUserProfile, 
+    getUserProfile,
+    uploadAvatar,
     editProfile, 
     editUser,
-    deleteUser, } = require('../controllers/UserController')
+    deleteUser } = require('../controllers/UserController')
 const { getPastEvents,
     pastEventDetails,
     pastEventNotAttended,
@@ -35,7 +36,7 @@ router.get('/users/profile', auth, getProfile)
 router.get('/users/profile/basic', auth, getProfileBasic)
 
 //Edit profile (by students)
-router.patch('/users/profile/edit', auth, editProfile)
+router.patch('/users/profile/edit', auth, uploadAvatar.single('avatar'), editProfile)
 
 //Admin access
 //Edit user for admin (can assign a user as CCA managers)
