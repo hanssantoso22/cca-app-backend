@@ -5,15 +5,14 @@ const EventSchema = mongoose.Schema ({
     eventName: {
         type: String,
         required: true,
-        immutable: false,
     },
-    organizer: {
+    organizer: [{
         type: ObjectID,
         required: true,
         ref: 'CCAModel'
-    },
+    }],
     allowedParticipants: [{
-        type: [String, ObjectID],
+        type: ObjectID,
         ref: 'CCAModel'
     }],
     visibility: [{
@@ -52,7 +51,10 @@ const EventSchema = mongoose.Schema ({
     }],
     tags: [{
         type: String
-    }]
+    }],
+    image: {
+        type: Buffer
+    }
 }, {
     collection: 'events'
 })
@@ -71,5 +73,5 @@ EventSchema.methods.publicEventDetails = function (...deletedFields) {
     })
     return eventObject
 }
-
-module.exports = mongoose.model('EventModel',EventSchema)
+const Event = mongoose.model('EventModel',EventSchema)
+module.exports = Event

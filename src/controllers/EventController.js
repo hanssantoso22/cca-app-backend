@@ -1,5 +1,7 @@
 const mongoose = require('mongoose')
 const Event = require('../models/EventModel')
+const multer = require('multer')
+const sharp = require('sharp')
 const PastEvent = require('../models/PastEventModel')
 const CCA = require('../models/CCAModel')
 
@@ -38,7 +40,7 @@ exports.getEventDetails = async (req,res) => {
         const returnedValue = eventDetails.getEventDetails(isRegistrationAllowed())
         res.send(returnedValue)
     } catch (e) {
-        res.status.send('Event not found')
+        res.status(400).send('Event not found')
     }
 }
 exports.registerEvent = async () => {
@@ -53,13 +55,51 @@ exports.registerEvent = async () => {
         res.status(400).send('Registration failed')
     }
 }
+exports.uploadEventImage = multer({
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|heic)/)) {
+            cb(new Error('Unsupported file type!'))
+        }
+        cb(undefined, true)
+    },
+})
 exports.createEvent = async (req,res) => {
     try {
         const newEvent = new Event(req.body)
         await newEvent.save()
         res.send(newEvent)
     } catch (e) {
-        res.status.send('Event not created')
+        res.status(400).send(e)
+    }
+}
+exports.uploadImage = async (req, res) => {
+    try {
+        let adjustedBuffer = null
+        if (req.file) {
+            adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+        }
+        let image = null
+        /* UPLOADING IMAGE TO AMAZON S3 */
+        /* const s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ID,
+            secretAccessKey: process.env.AWS_SECRET
+        })
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `event-thumbnails/${req.body.eventName}-${req.body.organizer}-thumbnail.png`,
+            Body: adjustedBuffer
+        }
+        const uploadPromise = s3.upload(params).promise()
+        const uploadedData = await uploadPromise
+        image = uploadedData.Location */
+        /* STORING IMAGE BUFFER IN DATABASE */
+        if (req.file) {
+            image = adjustedBuffer
+        }
+        const event = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id), { image }, {new: true})
+        res.send(event)
+    } catch (err) {
+        res.status(400).send(err)
     }
 }
 exports.editEvent = async (req,res) => {
@@ -68,7 +108,7 @@ exports.editEvent = async (req,res) => {
         res.send (eventDetails)
 
     } catch (e) {
-        res.status.send('Event not edited')
+        res.status(400).send('Event not edited')
     }
 }
 exports.markEventDone = async (req,res) => {
@@ -99,7 +139,7 @@ exports.getPastEvents = async (req,res) => {
         })
         res.send(pastEvents)
     } catch (e) {
-        res.status.send('Event not found')
+        res.status(400).send('Event not found')
     }
 }
 exports.pastEventDetails = async (req,res) => {
@@ -109,7 +149,7 @@ exports.pastEventDetails = async (req,res) => {
         })
         res.send(pastEvent)
     } catch (e) {
-        res.status.send('Event not found')
+        res.status(400).send('Event not found')
     }
 }
 exports.pastEventNotAttended = async (req,res) => {
@@ -117,7 +157,7 @@ exports.pastEventNotAttended = async (req,res) => {
         const deletedEvent = await PastEvent.findOneAndDelete({ _id: mongoose.Types.ObjectId(req.params.id)})
         res.send(deletedEvent)
     } catch (e) {
-        res.status.send('Event not deleted')
+        res.status(400).send('Event not deleted')
     }
 }
 exports.pastEventReview = async (req,res) => {
@@ -133,6 +173,6 @@ exports.pastEventReview = async (req,res) => {
         await updatedEvent.save()
         res.send(updatedEvent)
     } catch (e) {
-        res.status.send('Event not reviewed')
+        res.status(400).send('Event not reviewed')
     }
 }

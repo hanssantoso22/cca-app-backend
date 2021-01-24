@@ -136,6 +136,16 @@ exports.getProfile = async (req,res) => {
         res.status(400).send(e)
     }
 }
+exports.getManagedCCA = async (req,res) => {
+    try {
+        const managedCCA = await CCA.find ({
+            managers: mongoose.Types.ObjectId(req.user._id)
+        })
+        res.send(managedCCA)
+    } catch (err) {
+        res.status(400).send('Retrieve CCA failed')
+    }
+}
 exports.getProfileBasic = async (req,res) => {
     try {
         res.send(req.user)
@@ -183,26 +193,6 @@ exports.editProfile = async (req,res) => {
         updates.forEach(async (update)=> {
             req.user[update] = req.body[update]
         })
-        const adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
-
-
-        /* UPLOADING IMAGE TO AMAZON S3 */
-        // const s3 = new AWS.S3({
-        //     accessKeyId: process.env.AWS_ID,
-        //     secretAccessKey: process.env.AWS_SECRET
-        // })
-        // const params = {
-        //     Bucket: process.env.AWS_BUCKET_NAME,
-        //     Key: `avatars/${req.user.email}-avatar.png`,
-        //     Body: adjustedBuffer
-        // }
-        // const uploadPromise = s3.upload(params).promise()
-        // const uploadedData = await uploadPromise
-        // req.user['avatar'] = uploadedData.Location
-
-        /* STORING IMAGE BUFFER IN DATABASE */
-        req.user['avatar'] = adjustedBuffer
-
         await req.user.save()
         res.send(req.user)
     }
@@ -210,27 +200,61 @@ exports.editProfile = async (req,res) => {
         res.status(400).send(e)
     }
 }
-exports.editUser = async (req,res) => {
-    const userID = req.params.id
-    const updates = Object.keys(req.body)
-    const allowedUpdates = ['role','managedCCA']
-    const isValidOperation = updates.every((update)=>allowedUpdates.includes(update))
-    if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid updates!' })
-    }
+exports.changeAvatar = async (req,res) => {
     try {
-        const updatedUser = await User.findById(userID)
-        updates.forEach((update)=> updatedUser[update] = req.body[update])
-        updatedUser.save()
-        if (!user) {
-            return res.status(400).send({error:'Update not performed!'})
+        const adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+        /* UPLOADING IMAGE TO AMAZON S3 */
+        /* const s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ID,
+            secretAccessKey: process.env.AWS_SECRET
+        })
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `avatars/${req.user.email}-avatar.png`,
+            Body: adjustedBuffer
         }
-        res.send(updatedUser)
-    }
-    catch (e) {
-        res.status(400).send(e)
+        const uploadPromise = s3.upload(params).promise()
+        const uploadedData = await uploadPromise
+        req.user['avatar'] = uploadedData.Location */
+
+        /* STORING IMAGE BUFFER IN DATABASE */
+        req.user['avatar'] = adjustedBuffer
+        await req.user.save()
+        res.send(req.user)
+    } catch (err) {
+        res.status(400).send('Changing avatar failed')
     }
 }
+exports.removeAvatar = async (req,res) => {
+    try {
+        req.user.avatar = null
+        await req.user.save()
+        res.send(req.user)
+    } catch (err) {
+        res.status(400).send('Removing avatar failed')
+    }
+}
+// exports.editUser = async (req,res) => {
+//     const userID = req.params.id
+//     const updates = Object.keys(req.body)
+//     const allowedUpdates = ['role','managedCCA']
+//     const isValidOperation = updates.every((update)=>allowedUpdates.includes(update))
+//     if (!isValidOperation) {
+//         return res.status(400).send({ error: 'Invalid updates!' })
+//     }
+//     try {
+//         const updatedUser = await User.findById(userID)
+//         updates.forEach((update)=> updatedUser[update] = req.body[update])
+//         updatedUser.save()
+//         if (!user) {
+//             return res.status(400).send({error:'Update not performed!'})
+//         }
+//         res.send(updatedUser)
+//     }
+//     catch (e) {
+//         res.status(400).send(e)
+//     }
+// }
 exports.deleteUser = async (req,res) => {
     try {
         const deletedUser = await User.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})

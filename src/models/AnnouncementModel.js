@@ -6,21 +6,23 @@ const AnnouncementSchema = mongoose.Schema ({
         type: String,
         required: true,
     },
-    organizer: {
+    organizer: [{
         type: ObjectID,
         ref: 'CCAModel',
+    }],
+    visibility: [{
+        type: ObjectID,
         required: true,
-    },
-    visibility: {
-        type: [String,ObjectID],
-        required: true,
-    },
+    }],
     content: {
         type: String,
     },
+    image: {
+        type: Buffer,
+    }
 }, {
     collection: 'announcements',
     timestamps: true,
 })
-
-module.exports = mongoose.model('AnnouncementModel', AnnouncementSchema)
+const Announcement = mongoose.model('AnnouncementModel', AnnouncementSchema)
+module.exports = Announcement

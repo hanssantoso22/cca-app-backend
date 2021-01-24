@@ -12,12 +12,15 @@ const { login,
     uploadAvatar,
     editProfile, 
     editUser,
-    deleteUser } = require('../controllers/UserController')
+    deleteUser, 
+    removeAvatar,
+    changeAvatar,
+    getManagedCCA} = require('../controllers/UserController')
 const { getPastEvents,
     pastEventDetails,
     pastEventNotAttended,
     pastEventReview } = require('../controllers/EventController')
-const { auth, authAdmin, authResetToken } = require('../middleware/auth')
+const { auth, authAdmin, authResetToken, authManager } = require('../middleware/auth')
 const router = express.Router()
 
 router.post('/users/login', login)
@@ -36,14 +39,19 @@ router.get('/users/profile', auth, getProfile)
 router.get('/users/profile/basic', auth, getProfileBasic)
 
 //Edit profile (by students)
-router.patch('/users/profile/edit', auth, uploadAvatar.single('avatar'), editProfile)
+router.patch('/users/profile/edit', auth, editProfile)
+router.patch('/users/profile/changeAvatar', auth, uploadAvatar.single('avatar'), changeAvatar)
+router.patch('/users/profile/removeAvatar', auth, removeAvatar)
 
 //Admin access
 //Edit user for admin (can assign a user as CCA managers)
 router.get('/user/:id', auth, authAdmin, getUserProfile)
-router.patch('/user/:id/edit', auth, authAdmin, editUser)
+// router.patch('/user/:id/edit', auth, authAdmin, editUser)
 router.delete('/user/:id/delete', auth, authAdmin, deleteUser)
 router.get('/users', auth, authAdmin, getAllUsers)
+
+//Manager access only
+router.get('/users/managedCCAs', auth, getManagedCCA)
 
 //Controller below are defined in EventController
 router.get('/users/pastEvents', auth, getPastEvents)
