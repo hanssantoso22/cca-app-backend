@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const multer = require('multer')
 const sharp = require('sharp')
+const AWS = require('aws-sdk')
 const Announcement = require('../models/AnnouncementModel')
 const CCA = require('../models/CCAModel')
 
@@ -15,12 +16,27 @@ exports.getAnnouncements = async (req,res) => {
     }
     
 }
-exports.getAnnouncementDetails = async (req,res) => {
+exports.getAnnouncement = async (req,res) => {
     try {
-        const announcements = await Announcement.find({
+        const announcement = await Announcement.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
         })
-        res.send(announcements)
+        res.send(announcement)
+    } catch (e) {
+        res.status(400).send('Announcement not found')
+    }
+}
+exports.getAnnouncementDetails = async (req,res) => {
+    try {
+        const announcement = await Announcement.findOne({
+            _id: mongoose.Types.ObjectId(req.params.id),
+        })
+        const announcementObject = announcement.toObject()
+        if (announcementObject.image!=null) {
+            delete announcementObject.image
+        }
+        res.send(announcementObject)
+        // res.send(announcement)
     } catch (e) {
         res.status(400).send('Announcement not found')
     }
@@ -46,31 +62,55 @@ exports.uploadImage = async (req, res) => {
     try {
         let adjustedBuffer = null
         if (req.file) {
-            adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+            adjustedBuffer = await sharp(req.file.buffer).png().resize({
+                width: 1000,
+                height: 1000,
+                fit: sharp.fit.inside
+            }).toBuffer()
         }
         let image = null
         /* UPLOADING IMAGE TO AMAZON S3 */
-        /* const s3 = new AWS.S3({
+        const s3 = new AWS.S3({
             accessKeyId: process.env.AWS_ID,
             secretAccessKey: process.env.AWS_SECRET
         })
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: `announcement-thumbnails/${req.body.announcementTitle}-${req.body.organizer}-thumbnail.png`,
+            Key: `announcement-thumbnails/${req.params.id}-thumbnail.png`,
             Body: adjustedBuffer
         }
         const uploadPromise = s3.upload(params).promise()
         const uploadedData = await uploadPromise
-        image = uploadedData.Location */
+        image = uploadedData.Location
 
         /* STORING IMAGE BUFFER IN DATABASE */
-        if (req.file) {
+        /* if (req.file) {
             image = adjustedBuffer
-        }
+        } */
         const announcement = await Announcement.findOneAndUpdate({_id: mongoose.Types.ObjectId(req.params.id)}, { image }, {new: true})
         res.send(announcement)
     } catch (err) {
         res.status(400).send()
+        console.log(err)
+    }
+}
+//This controller only deletes image in the AWS S3
+exports.deleteImage = async (req,res) => {
+    try {
+        const s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ID,
+            secretAccessKey: process.env.AWS_SECRET
+        })
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `announcement-thumbnails/${req.params.id}-thumbnail.png`,
+        }
+        const deletePromise = s3.deleteObject(params).promise()
+        const deletedData = await deletePromise
+        const announcement = await Announcement.findOneAndUpdate({_id: mongoose.Types.ObjectId(req.params.id)}, { image: null }, {new: true})
+        res.send(announcement)
+    } catch (err) {
+        res.status(400).send(err)
         console.log(err)
     }
 } 
@@ -81,5 +121,13 @@ exports.editAnnouncement = async (req,res) => {
 
     } catch (e) {
         res.status(400).send('Announcement not edited')
+    }
+}
+exports.deleteAnnouncement = async (req,res) => {
+    try {
+        const deleted = await Announcement.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})
+        res.send(deleted)
+    } catch (err) {
+        res.status(400).send(err)
     }
 }

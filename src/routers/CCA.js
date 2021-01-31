@@ -24,10 +24,10 @@ router.patch("/CCA/:id/resetManager", auth, authAdmin, resetManager)
 router.patch("/CCA/:id/resetMember", auth, authAdmin, resetMember)
 
 //Manager access only
-router.get("/CCA/:id/viewMembers", auth, authManager,viewCCAMembers)
-router.patch("/CCA/:id/editMember", auth, authManager, editMember)
-router.get("/CCA/:id/pastEvents", auth, authManager,getPastEvents)
-router.get("/CCA/:id/pastAnnouncements", auth, authManager,getPastAnnouncements)
+router.get("/CCA/:id/viewMembers", auth,viewCCAMembers)
+router.patch("/CCA/:id/editMember", auth, editMember)
+router.get("/CCA/:id/pastEvents", auth,getPastEvents)
+router.get("/CCA/:id/pastAnnouncements", auth,getPastAnnouncements)
 
 //General user access
 router.get("/CCAs/all/names", auth, listCCA)

@@ -15,7 +15,8 @@ const { login,
     deleteUser, 
     removeAvatar,
     changeAvatar,
-    getManagedCCA} = require('../controllers/UserController')
+    getManagedCCA,
+    nullifyResetToken} = require('../controllers/UserController')
 const { getPastEvents,
     pastEventDetails,
     pastEventNotAttended,
@@ -33,6 +34,7 @@ router.post('/users/forget', forgetPassword)
 
 //Update Password (for Forget Password)
 router.post('/users/forget/update', authResetToken, updatePassword)
+router.patch('/users/forget/resetToken', nullifyResetToken)
 
 //Retrieve user profile (all types of users)
 router.get('/users/profile', auth, getProfile)

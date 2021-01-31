@@ -18,7 +18,8 @@ const AnnouncementSchema = mongoose.Schema ({
         type: String,
     },
     image: {
-        type: Buffer,
+        type: String,
+        default: null,
     }
 }, {
     collection: 'announcements',

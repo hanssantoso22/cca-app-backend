@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const Event = require('../models/EventModel')
 const multer = require('multer')
 const sharp = require('sharp')
+const AWS = require('aws-sdk')
 const PastEvent = require('../models/PastEventModel')
 const CCA = require('../models/CCAModel')
 
@@ -23,7 +24,7 @@ exports.getEvents = async (req,res) => {
     }
     
 }
-exports.getEventDetails = async (req,res) => {
+exports.getEvent = async (req,res) => {
     try {
         const joinedCCA = await CCA.getJoinedCCA(req.user._id)
         const eventDetails = await Event.find({
@@ -39,6 +40,20 @@ exports.getEventDetails = async (req,res) => {
         }
         const returnedValue = eventDetails.getEventDetails(isRegistrationAllowed())
         res.send(returnedValue)
+    } catch (e) {
+        res.status(400).send('Event not found')
+    }
+}
+exports.getEventDetails = async (req,res) => {
+    try {
+        const eventDetails = await Event.findOne({
+            _id: mongoose.Types.ObjectId(req.params.id),
+        })
+        const eventObject = eventDetails.toObject()
+        if (eventObject.image!=null) {
+            delete eventObject.image
+        }
+        res.send(eventObject)
     } catch (e) {
         res.status(400).send('Event not found')
     }
@@ -76,27 +91,58 @@ exports.uploadImage = async (req, res) => {
     try {
         let adjustedBuffer = null
         if (req.file) {
-            adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+            adjustedBuffer = await sharp(req.file.buffer).png().resize({
+                width: 1000,
+                height: 1000,
+                fit: sharp.fit.inside
+            }).toBuffer()
         }
         let image = null
         /* UPLOADING IMAGE TO AMAZON S3 */
-        /* const s3 = new AWS.S3({
+        const s3 = new AWS.S3({
             accessKeyId: process.env.AWS_ID,
             secretAccessKey: process.env.AWS_SECRET
         })
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: `event-thumbnails/${req.body.eventName}-${req.body.organizer}-thumbnail.png`,
+            Key: `event-thumbnails/${req.params.id}-thumbnail.png`,
             Body: adjustedBuffer
         }
         const uploadPromise = s3.upload(params).promise()
         const uploadedData = await uploadPromise
-        image = uploadedData.Location */
+        image = uploadedData.Location
         /* STORING IMAGE BUFFER IN DATABASE */
-        if (req.file) {
+        /* if (req.file) {
             image = adjustedBuffer
-        }
+        } */
         const event = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id), { image }, {new: true})
+        res.send(event)
+    } catch (err) {
+        res.status(400).send(err)
+    }
+}
+exports.deleteEvent = async (req,res) => {
+    try {
+        const deleted = await Event.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})
+        res.send(deleted)
+    } catch (err) {
+        res.status(400).send(err)
+        console.log(err)
+    }
+}
+exports.deleteImage = async (req,res) => {
+    try {
+        const s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ID,
+            secretAccessKey: process.env.AWS_SECRET
+        })
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `event-thumbnails/${req.params.id}-thumbnail.png`,
+        }
+        const deletePromise = s3.deleteObject(params).promise()
+        const deletedData = await deletePromise
+        const event = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id), { image: null }, {new: true})
         res.send(event)
     } catch (err) {
         res.status(400).send(err)

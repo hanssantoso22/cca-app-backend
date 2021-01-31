@@ -107,6 +107,15 @@ exports.updatePassword = async (req,res) => {
         res.status(400).send('Failed')
     }
 }
+exports.nullifyResetToken = async (req,res) => {
+    try {
+        req.user.resetToken = null
+        await req.user.save ()
+        res.send(req.user)
+    } catch (err) {
+
+    }
+}
 exports.getAllUsers = async (req,res) => {
     try {
         const users = await User.find({role: {$ne: 'admin'}})
