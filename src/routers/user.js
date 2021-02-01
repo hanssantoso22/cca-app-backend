@@ -50,7 +50,7 @@ router.patch('/users/profile/removeAvatar', auth, removeAvatar)
 router.get('/user/:id', auth, authAdmin, getUserProfile)
 // router.patch('/user/:id/edit', auth, authAdmin, editUser)
 router.delete('/user/:id/delete', auth, authAdmin, deleteUser)
-router.get('/users', auth, authAdmin, getAllUsers)
+router.get('/users', auth, getAllUsers)
 
 //Manager access only
 router.get('/users/managedCCAs', auth, getManagedCCA)

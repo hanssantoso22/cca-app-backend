@@ -45,7 +45,7 @@ const EventSchema = mongoose.Schema ({
     description: {
         type: String,
     },
-    registeredApplicants: [{
+    participants: [{
         type: ObjectID,
         ref: 'UserModel'
     }],

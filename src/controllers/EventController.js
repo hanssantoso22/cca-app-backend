@@ -49,6 +49,7 @@ exports.getEventDetails = async (req,res) => {
         const eventDetails = await Event.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
         })
+        await eventDetails.populate('participants').execPopulate()
         const eventObject = eventDetails.toObject()
         if (eventObject.image!=null) {
             delete eventObject.image

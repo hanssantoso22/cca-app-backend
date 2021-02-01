@@ -11,7 +11,9 @@ const { listCCA,
   resetManager,
   resetMember,
   getPastEvents,
-  getPastAnnouncements } = require('../controllers/CCAController')
+  getPastAnnouncements, 
+  getArchivedAnnouncements,
+  getArchivedEvents} = require('../controllers/CCAController')
 const { auth, authAdmin, authManager } = require('../middleware/auth')
 
 //Admin access only
@@ -25,9 +27,11 @@ router.patch("/CCA/:id/resetMember", auth, authAdmin, resetMember)
 
 //Manager access only
 router.get("/CCA/:id/viewMembers", auth,viewCCAMembers)
-router.patch("/CCA/:id/editMember", auth, editMember)
-router.get("/CCA/:id/pastEvents", auth,getPastEvents)
-router.get("/CCA/:id/pastAnnouncements", auth,getPastAnnouncements)
+router.patch("/CCA/:id/editMembers", auth, editMember)
+router.get("/CCA/:id/pastEvents", auth, getPastEvents)
+router.get("/CCA/:id/pastAnnouncements", auth, getPastAnnouncements)
+router.get("/CCA/:id/archivedEvents", auth, getArchivedEvents)
+router.get("/CCA/:id/archivedAnnouncements", auth, getArchivedAnnouncements)
 
 //General user access
 router.get("/CCAs/all/names", auth, listCCA)

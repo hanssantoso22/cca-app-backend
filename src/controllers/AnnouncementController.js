@@ -8,7 +8,7 @@ const CCA = require('../models/CCAModel')
 exports.getAnnouncements = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
-        const announcementCollection = await Announcement.find({ visibility: { $all: joinedCCAid }})
+        const announcementCollection = await Announcement.find({ visibility: { $all: joinedCCAid }, done: false})
         await announcementCollection.populate('organizer').execPopulate()
         res.send(announcementCollection)
     } catch (e) {
@@ -121,6 +121,15 @@ exports.editAnnouncement = async (req,res) => {
 
     } catch (e) {
         res.status(400).send('Announcement not edited')
+    }
+}
+exports.markAnnouncementObsolete = async (req,res) => {
+    try {
+        const obsoleteAnnouncement = await Announcement.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),{ done: true },{new: true})
+        res.send (obsoleteAnnouncement)
+
+    } catch (e) {
+        res.status(400).send('Announcement not marked',e)
     }
 }
 exports.deleteAnnouncement = async (req,res) => {

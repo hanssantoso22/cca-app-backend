@@ -129,19 +129,41 @@ exports.resetMember = async (req,res) => {
         res.status(400).send('Reset member failed')
     }
 }
+//Get events marked as not done
 exports.getPastEvents = async (req,res) => {
     try {
         const Event = require('../models/EventModel')
-        const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id)})
+        const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: false })
         res.send(events)
     } catch (e) {
         res.status(400).send('Events not found!')
     }
 }
+//Get events marked as done
+exports.getArchivedEvents = async (req,res) => {
+    try {
+        const Event = require('../models/EventModel')
+        const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: true })
+        res.send(events)
+    } catch (e) {
+        res.status(400).send('Events not found!')
+    }
+}
+//Get announcements marked as not done
 exports.getPastAnnouncements = async (req,res) => {
     try {
         const Announcement = require('../models/AnnouncementModel')
-        const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id)})
+        const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: false })
+        res.send(announcements)
+    } catch (e) {
+        res.status(400).send('Announcements not found!')
+    }
+}
+//Get announcements marked as done
+exports.getArchivedAnnouncements = async (req,res) => {
+    try {
+        const Announcement = require('../models/AnnouncementModel')
+        const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: true })
         res.send(announcements)
     } catch (e) {
         res.status(400).send('Announcements not found!')

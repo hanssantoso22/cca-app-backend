@@ -20,6 +20,10 @@ const AnnouncementSchema = mongoose.Schema ({
     image: {
         type: String,
         default: null,
+    },
+    done: {
+        type: Boolean,
+        default: false
     }
 }, {
     collection: 'announcements',

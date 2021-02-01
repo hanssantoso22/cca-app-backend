@@ -6,7 +6,8 @@ const { getAnnouncements,
     uploadAnnouncementImage, 
     uploadImage,
     deleteAnnouncement,
-    deleteImage} = require('../controllers/AnnouncementController')
+    deleteImage,
+    markAnnouncementObsolete} = require('../controllers/AnnouncementController')
 const { auth, authManager } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()
@@ -20,6 +21,7 @@ router.post('/announcements/create', auth, createAnnouncement)
 router.get('/announcement/:id/details', auth, getAnnouncementDetails)
 router.patch('/announcement/:id/uploadImage', auth, uploadAnnouncementImage.single('image'), uploadImage)
 router.patch('/announcement/:id/edit', auth, editAnnouncement)
+router.patch('/announcement/:id/markDone', auth, markAnnouncementObsolete)
 router.delete('/announcement/:id/delete', auth, deleteAnnouncement)
 router.delete('/announcement/:id/deleteImage', auth, deleteImage)
 
