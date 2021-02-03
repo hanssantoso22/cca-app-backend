@@ -6,22 +6,18 @@ const PastEventSchema = new mongoose.Schema ({
         type: ObjectID,
         ref: 'UserModel'
     },
-    eventID: {
+    event: {
         type: ObjectID,
         ref: 'EventModel'
     },
-    eventName: {
-        type: String
-    },
-    organizer: {
-        type: String
-    },
-    startTime: Date,
-    endTime: Date,
     read: {
         type: Boolean,
         default: false
     },
+    reviewed: {
+        type: Boolean,
+        default: false
+    }
 
 }, {collection: 'pastEvents'})
 

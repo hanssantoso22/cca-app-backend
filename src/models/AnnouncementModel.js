@@ -6,14 +6,14 @@ const AnnouncementSchema = mongoose.Schema ({
         type: String,
         required: true,
     },
-    organizer: [{
+    organizer: {
         type: ObjectID,
         ref: 'CCAModel',
-    }],
-    visibility: [{
+    },
+    visibility: {
         type: ObjectID,
-        required: true,
-    }],
+        default: null
+    },
     content: {
         type: String,
     },

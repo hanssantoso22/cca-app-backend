@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const Event = require('../models/EventModel')
 const multer = require('multer')
 const sharp = require('sharp')
+const moment = require('moment')
 const AWS = require('aws-sdk')
 const PastEvent = require('../models/PastEventModel')
 const CCA = require('../models/CCAModel')
@@ -9,41 +10,68 @@ const CCA = require('../models/CCAModel')
 exports.getEvents = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
-        const eventCollection = await Event.find({ visibility: { $all: joinedCCAid }, done: false})
-        await eventCollection.populate('organizer').execPopulate()
-        eventCollection = eventCollection.publicEventDetails(
-            'reviews',
-            'allowedParticipants',
-            'visibility',
-            'done',
-            'registeredApplicants'
-        )
-        res.send(eventCollection)
+        const eventCollection = await Event.find({visibility: {$in: [...joinedCCAid, null]}, done: false}).sort({startTime: 1}).populate('organizer')
+        let retrievedEvents = {}
+        eventCollection.forEach(event => {
+            const parsedStartDate = moment(event.startTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('YYYY-MM-DD')
+            if (!Object.keys(retrievedEvents).includes(parsedStartDate)) {
+                retrievedEvents[parsedStartDate] = []
+            }
+            retrievedEvents[parsedStartDate].push({
+                id: event._id,
+                name: event.eventName,
+                organizer: event.organizer.ccaName,
+                height: 80,
+                startTime: moment(event.startTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('HH:mm'),
+                endTime: moment(event.endTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('HH:mm'),
+                color: event.organizer.color
+            })
+        })
+        res.send(retrievedEvents)
     } catch (e) {
-        res.status(400).send ('Event not found')
+        res.status(400).send (e)
+        console.log(e)
     }
     
 }
+//For public
 exports.getEvent = async (req,res) => {
     try {
-        const joinedCCA = await CCA.getJoinedCCA(req.user._id)
-        const eventDetails = await Event.find({
+        const joinedCCAid = await CCA.distinct('_id', {members: mongoose.Types.ObjectId(req.user._id)})
+        const joinedCCA = joinedCCAid.map((cca) => cca.toString())
+        const eventDetails = await Event.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
         })
-        const isRegistrationAllowed = async () => {
-            const event = await Event.find({
-                _id: mongoose.Types.ObjectId(req.params.id), 
-                allowedParticipants: {$all: joinedCCA}
-            })
-            if (event) return true
-            else return false
+        const eventObject = eventDetails.toObject()
+        //To check if user has registered for the event
+        const PastEvent = require('../models/PastEventModel')
+        const pastEvents = await PastEvent.find({user: req.user._id, event: eventObject._id})
+        if (pastEvents.length == 0) {
+            eventObject.registered = false
         }
-        const returnedValue = eventDetails.getEventDetails(isRegistrationAllowed())
-        res.send(returnedValue)
+        else {
+            eventObject.registered = true
+        }
+        //To check if user can join the event
+        if (eventObject.allowedParticipants == null) {
+            eventObject.canRegister = true
+        }
+        else {
+            const found = joinedCCA.includes(eventObject.allowedParticipants.toString())
+            if (found) {
+                eventObject.canRegister = true
+            }
+            else {
+                eventObject.canRegister = false
+            }
+        }
+        res.send(eventObject)
     } catch (e) {
         res.status(400).send('Event not found')
+        console.log(e)
     }
 }
+//For managers
 exports.getEventDetails = async (req,res) => {
     try {
         const eventDetails = await Event.findOne({
@@ -59,16 +87,25 @@ exports.getEventDetails = async (req,res) => {
         res.status(400).send('Event not found')
     }
 }
-exports.registerEvent = async () => {
+exports.registerEvent = async (req, res) => {
     try {
+        //Add user to registeredApplicants array
         const event = await Event.findOne({
             _id: mongoose.Types.ObjectId(req.params.id)
         })
-        event.registeredApplicants = event.registeredApplicants.concat (req.user._id)
+        event.participants = event.participants.concat (req.user._id)
         await event.save()
+
+        //Create new document in PastEvent collection
+        const newPastEvent = new PastEvent({
+            user: req.user._id,
+            event: req.params.id,
+        })
+        await newPastEvent.save()
         res.send(event)
     } catch (e) {
         res.status(400).send('Registration failed')
+        console.log(e)
     }
 }
 exports.uploadEventImage = multer({
@@ -161,17 +198,6 @@ exports.editEvent = async (req,res) => {
 exports.markEventDone = async (req,res) => {
     try {
         const doneEvent = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),{ done: true },{ new: true })
-        doneEvent.registeredApplicants.forEach (async(registeredApplicant) => {
-            const newPastEvent = new PastEvent ({
-                user: registeredApplicant,
-                eventID: doneEvent._id,
-                eventName: doneEvent.eventName,
-                organizer: doneEvent.organizer,
-                startTime: doneEvent.startTime,
-                endTime: doneEvent.endTime,
-            })
-            await newPastEvent.save()
-        })
         res.send(doneEvent)
     } catch (e) {
         res.status(400).send('Event is not marked as done!')
@@ -184,7 +210,9 @@ exports.getPastEvents = async (req,res) => {
         const pastEvents = await PastEvent.find({ 
             user: mongoose.Types.ObjectId(req.user._id),
         })
-        res.send(pastEvents)
+        await pastEvents.populate('event').execPopulate()
+        const events = pastEvents.filter(item => item.done == true)
+        res.send(events)
     } catch (e) {
         res.status(400).send('Event not found')
     }
@@ -209,9 +237,9 @@ exports.pastEventNotAttended = async (req,res) => {
 }
 exports.pastEventReview = async (req,res) => {
     try {
-        const pastEvent = await PastEvent.findOne ({
+        const pastEvent = await PastEvent.findOneAndUpdate ({
             _id: mongoose.Types.ObjectId(req.params.id)
-        })
+        }, {reviewed: true, read: true})
         const updatedEvent = await Event.findOne ({
             _id: mongoose.Types.ObjectId(pastEvent.eventID)
         })

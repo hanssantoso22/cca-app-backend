@@ -6,19 +6,21 @@ const EventSchema = mongoose.Schema ({
         type: String,
         required: true,
     },
-    organizer: [{
+    organizer: {
         type: ObjectID,
         required: true,
         ref: 'CCAModel'
-    }],
-    allowedParticipants: [{
+    },
+    allowedParticipants: {
         type: ObjectID,
-        ref: 'CCAModel'
-    }],
-    visibility: [{
+        ref: 'CCAModel',
+        default: null
+    },
+    visibility: {
         type: ObjectID,
-        ref: 'CCAModel'
-    }],
+        ref: 'CCAModel',
+        default: null
+    },
     reviews: [{
         type: String,
         max: 200,
@@ -33,9 +35,11 @@ const EventSchema = mongoose.Schema ({
     },
     venue: {
         type: String,
+        default: '',
     },
     link: {
         type: String,
+        default: ''
     },
     done: {
         type: Boolean,

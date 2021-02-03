@@ -8,7 +8,7 @@ const CCA = require('../models/CCAModel')
 exports.getAnnouncements = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
-        const announcementCollection = await Announcement.find({ visibility: { $all: joinedCCAid }, done: false})
+        const announcementCollection = await Announcement.find({ $or: [{visibility: [joinedCCAid]}, {visibility: []}], done: false})
         await announcementCollection.populate('organizer').execPopulate()
         res.send(announcementCollection)
     } catch (e) {
@@ -56,6 +56,7 @@ exports.createAnnouncement = async (req,res) => {
         res.send(newAnnouncement)
     } catch (e) {
         res.status(400).send('Announcement not created')
+        console.log(e)
     }
 }
 exports.uploadImage = async (req, res) => {

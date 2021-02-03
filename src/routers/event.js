@@ -9,7 +9,7 @@ const { getEvents,
     uploadImage,
     deleteImage,
     deleteEvent} = require('../controllers/EventController')
-const { auth, authManager } = require('../middleware/auth')
+const { auth } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()
 
