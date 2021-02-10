@@ -7,8 +7,9 @@ const { getAnnouncements,
     uploadImage,
     deleteAnnouncement,
     deleteImage,
-    markAnnouncementObsolete} = require('../controllers/AnnouncementController')
-const { auth, authManager } = require('../middleware/auth')
+    markAnnouncementObsolete,
+    pushNotificationList} = require('../controllers/AnnouncementController')
+const { auth } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()
 
@@ -18,6 +19,7 @@ router.get('/announcement/:id', auth, getAnnouncement)
 
 //Manager access only
 router.post('/announcements/create', auth, createAnnouncement)
+router.get('/announcement/:id/pushNotificationList', auth, pushNotificationList)
 router.get('/announcement/:id/details', auth, getAnnouncementDetails)
 router.patch('/announcement/:id/uploadImage', auth, uploadAnnouncementImage.single('image'), uploadImage)
 router.patch('/announcement/:id/edit', auth, editAnnouncement)

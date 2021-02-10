@@ -6,7 +6,9 @@ const moment = require('moment')
 const AWS = require('aws-sdk')
 const PastEvent = require('../models/PastEventModel')
 const CCA = require('../models/CCAModel')
+const gapi = require('../utilities/googleapi')
 
+//Get events (for public)
 exports.getEvents = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
@@ -34,7 +36,7 @@ exports.getEvents = async (req,res) => {
     }
     
 }
-//For public
+//Get event details (for public)
 exports.getEvent = async (req,res) => {
     try {
         const joinedCCAid = await CCA.distinct('_id', {members: mongoose.Types.ObjectId(req.user._id)})
@@ -71,7 +73,42 @@ exports.getEvent = async (req,res) => {
         console.log(e)
     }
 }
-//For managers
+//Get registered events/reminders from PastEvent collection (for public)
+exports.getReminders = async (req,res) => {
+    try {
+        const pastRegisteredEvents = await PastEvent.find({user: mongoose.Types.ObjectId(req.user._id)}).populate('event').populate('organizer')
+        const eventCollection = pastRegisteredEvents.filter(pastEvent => pastEvent.event.done == false)
+        let retrievedEvents = {}
+        eventCollection.forEach(pastEvent => {
+            const parsedStartDate = moment(pastEvent.event.startTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('YYYY-MM-DD')
+            if (!Object.keys(retrievedEvents).includes(parsedStartDate)) {
+                retrievedEvents[parsedStartDate] = []
+            }
+            retrievedEvents[parsedStartDate].push({
+                id: pastEvent.event._id,
+                name: pastEvent.event.eventName,
+                organizer: pastEvent.organizer.ccaName,
+                height: 80,
+                startTime: moment(pastEvent.event.startTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('HH:mm'),
+                endTime: moment(pastEvent.event.endTime, `${'YYYY-MM-DD'}T${'HH:mm:ss.sssZ'}`).format('HH:mm'),
+                color: pastEvent.organizer.color
+            })
+        })
+        res.send(retrievedEvents)
+    } catch (error) {
+        res.status(400).send(error)
+    }
+}
+//Get reminder details (for public)
+exports.getReminderDetails = async (req, res) => {
+    try {
+        const selectedEvent = await Event.findById(mongoose.Types.ObjectId(req.params.eventID))
+        res.send(selectedEvent)
+    } catch (error) {
+        res.send(error).status(400)
+    }
+}
+//Get event details (for managers). It's used as the initial data for editing events
 exports.getEventDetails = async (req,res) => {
     try {
         const eventDetails = await Event.findOne({
@@ -87,6 +124,7 @@ exports.getEventDetails = async (req,res) => {
         res.status(400).send('Event not found')
     }
 }
+//Register for an event (for public)
 exports.registerEvent = async (req, res) => {
     try {
         //Add user to registeredApplicants array
@@ -100,6 +138,7 @@ exports.registerEvent = async (req, res) => {
         const newPastEvent = new PastEvent({
             user: req.user._id,
             event: req.params.id,
+            organizer: event.organizer
         })
         await newPastEvent.save()
         res.send(event)
@@ -108,6 +147,7 @@ exports.registerEvent = async (req, res) => {
         console.log(e)
     }
 }
+//Upload event image (for managers)
 exports.uploadEventImage = multer({
     fileFilter(req, file, cb) {
         if (!file.originalname.match(/\.(jpg|jpeg|png|heic)/)) {
@@ -116,6 +156,7 @@ exports.uploadEventImage = multer({
         cb(undefined, true)
     },
 })
+//For managers
 exports.createEvent = async (req,res) => {
     try {
         const newEvent = new Event(req.body)
@@ -125,6 +166,26 @@ exports.createEvent = async (req,res) => {
         res.status(400).send(e)
     }
 }
+exports.pushNotificationList = async (req,res) => {
+    try {
+        const User = require('../models/UserModel')
+        const event = await Event.findById(mongoose.Types.ObjectId(req.params.id))
+        if (event.visibility == null) {
+            const users = await User.find ({})
+            const pushNotificationTokens = users.filter(user => user.pushNotificationToken)
+            res.send(pushNotificationTokens)
+        }
+        else {
+            const organizer = await CCA.findById(mongoose.Types.ObjectId(event.organizer)).populate('members')
+            const ccaMembers = organizer.members
+            const pushNotificationTokens = ccaMembers.filter(item => item.pushNotificationToken)
+            res.send(pushNotificationTokens)
+        }
+    } catch (error) {
+        res.status(400).send(error)
+    }
+}
+//For managers
 exports.uploadImage = async (req, res) => {
     try {
         let adjustedBuffer = null
@@ -159,15 +220,18 @@ exports.uploadImage = async (req, res) => {
         res.status(400).send(err)
     }
 }
+//For managers
 exports.deleteEvent = async (req,res) => {
     try {
         const deleted = await Event.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})
+        await PastEvent.deleteMany({event: mongoose.Types.ObjectId(req.params.id)})
         res.send(deleted)
     } catch (err) {
         res.status(400).send(err)
         console.log(err)
     }
 }
+//For managers
 exports.deleteImage = async (req,res) => {
     try {
         const s3 = new AWS.S3({
@@ -186,6 +250,7 @@ exports.deleteImage = async (req,res) => {
         res.status(400).send(err)
     }
 }
+//For managers
 exports.editEvent = async (req,res) => {
     try {
         const eventDetails = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),req.body,{new: true})
@@ -195,6 +260,7 @@ exports.editEvent = async (req,res) => {
         res.status(400).send('Event not edited')
     }
 }
+//For managers
 exports.markEventDone = async (req,res) => {
     try {
         const doneEvent = await Event.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),{ done: true },{ new: true })
@@ -204,14 +270,13 @@ exports.markEventDone = async (req,res) => {
     }
 } 
 
-//Past event controllers
+//Past event controllers (for the events that have been marked as 'done')
 exports.getPastEvents = async (req,res) => {
     try {
         const pastEvents = await PastEvent.find({ 
-            user: mongoose.Types.ObjectId(req.user._id),
-        })
-        await pastEvents.populate('event').execPopulate()
-        const events = pastEvents.filter(item => item.done == true)
+            user: mongoose.Types.ObjectId(req.user._id)
+        }).populate('event').populate('organizer')
+        const events = pastEvents.filter(item => item.event.done == true)
         res.send(events)
     } catch (e) {
         res.status(400).send('Event not found')
@@ -221,7 +286,7 @@ exports.pastEventDetails = async (req,res) => {
     try {
         const pastEvent = await PastEvent.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
-        })
+        }).populate('event').populate('organizer')
         res.send(pastEvent)
     } catch (e) {
         res.status(400).send('Event not found')
@@ -233,6 +298,7 @@ exports.pastEventNotAttended = async (req,res) => {
         res.send(deletedEvent)
     } catch (e) {
         res.status(400).send('Event not deleted')
+        console.log(e)
     }
 }
 exports.pastEventReview = async (req,res) => {
@@ -241,10 +307,9 @@ exports.pastEventReview = async (req,res) => {
             _id: mongoose.Types.ObjectId(req.params.id)
         }, {reviewed: true, read: true})
         const updatedEvent = await Event.findOne ({
-            _id: mongoose.Types.ObjectId(pastEvent.eventID)
+            _id: mongoose.Types.ObjectId(pastEvent.event)
         })
-        updatedEvent.reviews = updatedEvent.reviews.concat(req.body.review)
-        updatedEvent.done = true
+        updatedEvent.reviews = updatedEvent.reviews.concat(req.body)
         await updatedEvent.save()
         res.send(updatedEvent)
     } catch (e) {

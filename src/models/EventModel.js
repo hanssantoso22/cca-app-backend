@@ -22,8 +22,8 @@ const EventSchema = mongoose.Schema ({
         default: null
     },
     reviews: [{
-        type: String,
-        max: 200,
+        rating: Number,
+        comment: String,
     }],
     startTime: {
         type: Date,
@@ -52,9 +52,6 @@ const EventSchema = mongoose.Schema ({
     participants: [{
         type: ObjectID,
         ref: 'UserModel'
-    }],
-    tags: [{
-        type: String
     }],
     image: {
         type: String,

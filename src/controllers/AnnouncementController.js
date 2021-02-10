@@ -1,15 +1,16 @@
 const mongoose = require('mongoose')
 const multer = require('multer')
 const sharp = require('sharp')
+const { sendPushNotification } = require('../utilities/PushNotification')
 const AWS = require('aws-sdk')
 const Announcement = require('../models/AnnouncementModel')
 const CCA = require('../models/CCAModel')
+const { pushNotificationToken } = require('./UserController')
 
 exports.getAnnouncements = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
-        const announcementCollection = await Announcement.find({ $or: [{visibility: [joinedCCAid]}, {visibility: []}], done: false})
-        await announcementCollection.populate('organizer').execPopulate()
+        const announcementCollection = await Announcement.find({visibility: {$in: [...joinedCCAid, null]}, done: false}).populate('organizer')
         res.send(announcementCollection)
     } catch (e) {
         res.status(400).send ('Announcement not found')
@@ -20,7 +21,7 @@ exports.getAnnouncement = async (req,res) => {
     try {
         const announcement = await Announcement.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
-        })
+        }).populate('organizer')
         res.send(announcement)
     } catch (e) {
         res.status(400).send('Announcement not found')
@@ -57,6 +58,27 @@ exports.createAnnouncement = async (req,res) => {
     } catch (e) {
         res.status(400).send('Announcement not created')
         console.log(e)
+    }
+}
+exports.pushNotificationList = async (req,res) => {
+    try {
+        const User = require('../models/UserModel')
+        const announcement = await Announcement.findById(mongoose.Types.ObjectId(req.params.id))
+        if (announcement.visibility == null) {
+            const users = await User.find ({})
+            const pushNotificationTokens = users.filter(user => user.pushNotificationToken)
+            res.send(pushNotificationTokens)
+        }
+        else {
+            const organizer = await CCA.findById(mongoose.Types.ObjectId(announcement.organizer)).populate('members')
+            const ccaMembers = organizer.members
+            const pushNotificationTokens = ccaMembers.filter(item => item.pushNotificationToken)
+            const notificationMessage = `New announcement from ${organizer.ccaName}! ${announcement.announcementTitle}`
+            sendPushNotification(pushNotificationTokens, notificationMessage)
+            res.send(pushNotificationTokens)
+        }
+    } catch (error) {
+        res.status(400).send(error)
     }
 }
 exports.uploadImage = async (req, res) => {

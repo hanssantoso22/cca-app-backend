@@ -1,5 +1,8 @@
 const CCA = require('../models/CCAModel')
 const User = require('../models/UserModel')
+const Announcement = require('../models/AnnouncementModel')
+const Event = require('../models/EventModel')
+const PastEvent = require('../models/PastEventModel')
 const mongoose = require('mongoose')
 
 exports.listCCA = async (req,res) => {
@@ -13,8 +16,15 @@ exports.listCCA = async (req,res) => {
 }
 exports.createNewCCA = async (req,res)=>{
     try {
-        const post = new CCA (req.body)
+        const post = new CCA ({...req.body, members: req.body.managers})
         await post.save()
+        req.body.managers.forEach(async manager => {
+            const user = await User.findOne({_id:mongoose.Types.ObjectId(manager)})
+            if (user.role =='student') {
+                user.role = 'manager'
+                await user.save()
+            }
+        })
         res.send(post)
     }
     catch (e) {
@@ -46,7 +56,23 @@ exports.CCADetails = async (req,res) => {
 }
 exports.deleteCCA = async (req,res) => {
     try {
+        const findCCA = await CCA.findOne({_id: mongoose.Types.ObjectId(req.params.id)})
         const deletedCCA = await CCA.findOneAndDelete({_id: mongoose.Types.ObjectId(req.params.id)})
+        // To change the previous managers' roles to 'student'
+        findCCA.managers.forEach(async (manager)=>{
+            const user = await User.findOne({ _id: mongoose.Types.ObjectId(manager) })
+            const managedCCAs = await CCA.findOne ({
+                managers: mongoose.Types.ObjectId(user._id)
+            })
+            if (!managedCCAs) {
+                user.role = 'student'
+                await user.save()
+            }
+        })
+        //To delete all events and announcements created by the CCA
+        await Announcement.deleteMany({organizer: mongoose.Types.ObjectId(req.params.id)})
+        await Event.deleteMany({organizer: mongoose.Types.ObjectId(req.params.id)})
+        await PastEvent.deleteMany({organizer: mongoose.Types.ObjectId(req.params.id)})
         res.send(deletedCCA)
     } catch (err) {
         res.status(400).send('Deleting CCA failed!')
@@ -132,7 +158,6 @@ exports.resetMember = async (req,res) => {
 //Get events marked as not done
 exports.getPastEvents = async (req,res) => {
     try {
-        const Event = require('../models/EventModel')
         const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: false })
         res.send(events)
     } catch (e) {
@@ -142,7 +167,6 @@ exports.getPastEvents = async (req,res) => {
 //Get events marked as done
 exports.getArchivedEvents = async (req,res) => {
     try {
-        const Event = require('../models/EventModel')
         const events = await Event.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: true })
         res.send(events)
     } catch (e) {
@@ -152,7 +176,6 @@ exports.getArchivedEvents = async (req,res) => {
 //Get announcements marked as not done
 exports.getPastAnnouncements = async (req,res) => {
     try {
-        const Announcement = require('../models/AnnouncementModel')
         const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: false })
         res.send(announcements)
     } catch (e) {
@@ -162,7 +185,6 @@ exports.getPastAnnouncements = async (req,res) => {
 //Get announcements marked as done
 exports.getArchivedAnnouncements = async (req,res) => {
     try {
-        const Announcement = require('../models/AnnouncementModel')
         const announcements = await Announcement.find({ organizer: mongoose.Types.ObjectId(req.params.id), done: true })
         res.send(announcements)
     } catch (e) {

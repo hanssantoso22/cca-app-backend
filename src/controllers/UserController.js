@@ -17,6 +17,7 @@ exports.login = async (req,res) => {
     }
     catch(e) {
         res.status(400).send(e)
+        console.log(e)
     }
 }
 exports.logout = async (req,res) => {
@@ -213,7 +214,7 @@ exports.changeAvatar = async (req,res) => {
     try {
         const adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
         /* UPLOADING IMAGE TO AMAZON S3 */
-        /* const s3 = new AWS.S3({
+        const s3 = new AWS.S3({
             accessKeyId: process.env.AWS_ID,
             secretAccessKey: process.env.AWS_SECRET
         })
@@ -224,10 +225,10 @@ exports.changeAvatar = async (req,res) => {
         }
         const uploadPromise = s3.upload(params).promise()
         const uploadedData = await uploadPromise
-        req.user['avatar'] = uploadedData.Location */
+        req.user['avatar'] = uploadedData.Location 
 
         /* STORING IMAGE BUFFER IN DATABASE */
-        req.user['avatar'] = adjustedBuffer
+        /* req.user['avatar'] = adjustedBuffer */
         await req.user.save()
         res.send(req.user)
     } catch (err) {
@@ -241,6 +242,14 @@ exports.removeAvatar = async (req,res) => {
         res.send(req.user)
     } catch (err) {
         res.status(400).send('Removing avatar failed')
+    }
+}
+exports.pushNotificationToken = async (req,res) => {
+    try {
+        const updatedUser = await User.findByIdAndUpdate(mongoose.Types.ObjectId(req.user._id),{pushNotificationToken: req.body.token},{new: true})
+        res.send(updatedUser)
+    } catch (error) {
+        res.status(400).send(error)
     }
 }
 // exports.editUser = async (req,res) => {

@@ -10,6 +10,10 @@ const PastEventSchema = new mongoose.Schema ({
         type: ObjectID,
         ref: 'EventModel'
     },
+    organizer: {
+        type: ObjectID,
+        ref: 'CCAModel'
+    },
     read: {
         type: Boolean,
         default: false

@@ -14,7 +14,7 @@ const { listCCA,
   getPastAnnouncements, 
   getArchivedAnnouncements,
   getArchivedEvents} = require('../controllers/CCAController')
-const { auth, authAdmin, authManager } = require('../middleware/auth')
+const { auth, authAdmin } = require('../middleware/auth')
 
 //Admin access only
 router.get("/CCAs", auth, authAdmin, retrieveCCAs)

@@ -50,7 +50,12 @@ const UserSchema = new mongoose.Schema ({
         type: String  
     },
     avatar: {
-        type: Buffer
+        type: String,
+        default: null,
+    },
+    pushNotificationToken: {
+        type: String,
+        default: null
     }
 }, {collection: 'users'})
 

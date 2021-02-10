@@ -16,18 +16,22 @@ const { login,
     removeAvatar,
     changeAvatar,
     getManagedCCA,
-    nullifyResetToken} = require('../controllers/UserController')
+    nullifyResetToken,
+    pushNotificationToken} = require('../controllers/UserController')
 const { getPastEvents,
     pastEventDetails,
     pastEventNotAttended,
-    pastEventReview } = require('../controllers/EventController')
-const { auth, authAdmin, authResetToken, authManager } = require('../middleware/auth')
+    pastEventReview,
+    getReminders,
+    getReminderDetails } = require('../controllers/EventController')
+const { auth, authAdmin, authResetToken } = require('../middleware/auth')
 const router = express.Router()
 
 router.post('/users/login', login)
 router.get('/users/logout', auth, logout)
 router.post('/users/logout/all', auth, logoutAll)
 router.post('/users/signup', signup)
+router.patch('/users/pushNotificationToken', auth, pushNotificationToken)
 
 //Forget Password (it takes user's email as an input, then it will generate a code sent to the user's email)
 router.post('/users/forget', forgetPassword)
@@ -60,6 +64,9 @@ router.get('/users/pastEvents', auth, getPastEvents)
 router.get('/users/pastEvent/:id', auth, pastEventDetails)
 router.delete('/users/pastEvent/:id/delete', auth, pastEventNotAttended)
 router.patch('/users/pastEvent/:id/submitReview', auth, pastEventReview)
+
+router.get('/users/reminders', auth, getReminders)
+router.get('/users/reminders/:eventID', auth, getReminderDetails)
 
 
 module.exports = router

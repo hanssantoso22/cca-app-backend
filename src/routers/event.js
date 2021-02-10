@@ -8,7 +8,8 @@ const { getEvents,
     uploadEventImage,
     uploadImage,
     deleteImage,
-    deleteEvent} = require('../controllers/EventController')
+    deleteEvent,
+    pushNotificationList} = require('../controllers/EventController')
 const { auth } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()
@@ -20,6 +21,7 @@ router.post('/event/:id/register', auth, registerEvent)
 
 //Manager access only
 router.post('/events/create', auth, createEvent)
+router.get('/event/:id/pushNotificationList', auth, pushNotificationList)
 router.get('/event/:id/details', auth, getEventDetails)
 router.patch('/event/:id/uploadImage', auth, uploadEventImage.single('image'), uploadImage)
 router.patch('/event/:id/edit', auth, editEvent)
