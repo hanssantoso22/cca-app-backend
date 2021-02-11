@@ -6,7 +6,6 @@ const moment = require('moment')
 const AWS = require('aws-sdk')
 const PastEvent = require('../models/PastEventModel')
 const CCA = require('../models/CCAModel')
-const gapi = require('../utilities/googleapi')
 
 //Get events (for public)
 exports.getEvents = async (req,res) => {

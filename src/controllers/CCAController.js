@@ -104,7 +104,9 @@ exports.editCCA = async (req,res)=> {
         const newManagers = req.body.managers.map((manager) => mongoose.Types.ObjectId(manager))
         const updated = await CCA.findByIdAndUpdate(mongoose.Types.ObjectId(req.params.id),req.body,{new:true})
         const currentCCA = await CCA.findOne({_id:mongoose.Types.ObjectId(req.params.id)})
-        currentCCA.members = [...currentCCA.members,...newManagers] //Add managers as members
+        const currentMembers = currentCCA.members.map(item => item.toString())
+        //Add managers as members
+        currentCCA.members = [...new Set([...currentMembers,...req.body.managers])]
         await currentCCA.save()
         newManagers.forEach(async (manager)=>{
             const user = await User.findOne({_id:manager})
@@ -147,11 +149,24 @@ exports.resetManager = async (req,res)=> {
 exports.resetMember = async (req,res) => {
     try {
         const findCCA = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id) })
+        const previousManagers = [...findCCA.managers]
         findCCA.members = []
         findCCA.managers = []
         await findCCA.save()
+        previousManagers.forEach(async (manager)=>{
+            const user = await User.findOne({ _id: mongoose.Types.ObjectId(manager) })
+            const managedCCAs = await CCA.findOne ({
+                managers: mongoose.Types.ObjectId(user._id)
+            })
+            console.log(managedCCAs)
+            if (!managedCCAs) {
+                user.role = 'student'
+                await user.save()
+            }
+        })
         res.send(findCCA)
     } catch (err) {
+        console.log(err)
         res.status(400).send('Reset member failed')
     }
 }

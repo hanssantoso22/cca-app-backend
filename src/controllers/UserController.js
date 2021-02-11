@@ -212,7 +212,11 @@ exports.editProfile = async (req,res) => {
 }
 exports.changeAvatar = async (req,res) => {
     try {
-        const adjustedBuffer = await sharp(req.file.buffer).png().toBuffer()
+        const adjustedBuffer = await sharp(req.file.buffer).png().resize({
+            width: 500,
+            height: 500,
+            fit: sharp.fit.inside
+        }).toBuffer()
         /* UPLOADING IMAGE TO AMAZON S3 */
         const s3 = new AWS.S3({
             accessKeyId: process.env.AWS_ID,
@@ -237,6 +241,16 @@ exports.changeAvatar = async (req,res) => {
 }
 exports.removeAvatar = async (req,res) => {
     try {
+        const s3 = new AWS.S3({
+            accessKeyId: process.env.AWS_ID,
+            secretAccessKey: process.env.AWS_SECRET
+        })
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: `avatars/${req.user.email}-avatar.png`,
+        }
+        const deletePromise = s3.deleteObject(params).promise()
+        await deletePromise
         req.user.avatar = null
         await req.user.save()
         res.send(req.user)
