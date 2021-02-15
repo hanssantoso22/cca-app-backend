@@ -1,6 +1,7 @@
 require('dotenv').config()
 const User = require('../models/UserModel')
 const mongoose = require('mongoose')
+const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const AWS = require('aws-sdk')
 const sharp = require('sharp')
@@ -17,7 +18,6 @@ exports.login = async (req,res) => {
     }
     catch(e) {
         res.status(400).send(e)
-        console.log(e)
     }
 }
 exports.logout = async (req,res) => {
@@ -44,7 +44,7 @@ exports.logoutAll = async (req,res) => {
 }
 
 exports.signup = async (req,res) => {
-    const user = new User({...req.body, avatar: null})
+    const user = new User(req.body)
     try {
         await user.save()
         const token = await user.getAuthToken()
@@ -59,7 +59,7 @@ After entering the number, the user is allowed to set a new password. */
 
 exports.forgetPassword = async(req,res)=> {
     try {
-        const user = await User.findOne({email: req.body.email})
+        const user = await User.findOne({email: req.body.email.toLowerCase()})
         const reset = await user.getResetCode()
         const resetCode = reset.code
         const resetToken = reset.token
@@ -67,13 +67,13 @@ exports.forgetPassword = async(req,res)=> {
         user.resetToken = resetToken
         await user.save()
         const emailData = {
-            from: 'CCA App Admin <admin@cca-app.com>',
+            from: 'Ekskul Admin <admin@cca-app.com>',
             to: req.body.email,
-            subject: 'Secret Key for Password Reset',
+            subject: '[Password Reset] Secret Key',
             html: `<p> Hi ${user.fname},</p>
-            <p>Kindly input the code below in your application:</p>
-            <p><a>${resetCode}</a></p>
-            <p>This code is valid for 5 minutes. Thank you.</p>`
+            <p>Kindly input the token below in your application:</p>
+            <p><a>${resetToken}</a></p>
+            <p>This token is valid for 5 minutes. Thank you.</p>`
         }
         mailgun.messages().send(emailData, function (error, body) {
             try {
@@ -83,38 +83,46 @@ exports.forgetPassword = async(req,res)=> {
                 res.status(400).send(error)
             }
         });
-        // res.send(reset)
 
     } catch (e) {
         res.status(400).send('Unsuccessful!')
     }
 }
 exports.updatePassword = async (req,res) => {
-    const { resetCode, newPassword } = req.body
+    const user = await User.findOne({email: req.body.email.toLowerCase()})
     try {
         const validateResetCode = () => {
-            if (resetCode==req.resetCode) {
+            if (req.body.resetToken==user.resetToken) {
                 return true
             }
             else throw new Error ('Not validated')
         }
-        validateResetCode()
-        req.user.password = newPassword
-        req.user.resetToken = null
-        await req.user.save ()
-        res.send(req.user)
+        if (validateResetCode()) {
+            const updates = ['password','resetToken']
+            updates.forEach(async (update)=> {
+                if (update=='resetToken') {
+                    user[update] = null
+                    return
+                }
+                user[update] = req.body[update]
+            })
+            await user.save()
+            res.send(req.user)
+            res.send(user)
+        }
 
     } catch (e) {
         res.status(400).send('Failed')
+        console.log(e)
     }
 }
 exports.nullifyResetToken = async (req,res) => {
+    console.log(req.body.email)
     try {
-        req.user.resetToken = null
-        await req.user.save ()
-        res.send(req.user)
+        const user = await User.findOneAndUpdate({email: req.body.email.toLowerCase()}, {resetToken: null}, {new: true})
+        res.send(user)
     } catch (err) {
-
+        res.send(err)
     }
 }
 exports.getAllUsers = async (req,res) => {

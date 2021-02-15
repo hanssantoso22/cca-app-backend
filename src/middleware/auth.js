@@ -45,20 +45,4 @@ const authManager = async (req,res,next) => {
     }
 }
 
-const authResetToken = async (req,res,next) => {
-    try {
-        const token = req.header('Authorization').replace('Bearer ','')
-        const decoded = jwt.verify(token,process.env.FORGET_PASS_PRIVATE_KEY)
-        const user = await User.findOne({ email: decoded.email, resetToken: token })
-        if (!user) {
-            throw new Error()
-        }
-        req.user = user
-        req.resetCode = decoded.resetCode
-
-        next()
-    } catch (e) {
-        res.status(401).send('Not authenticated')
-    }
-}
-module.exports = { auth, authAdmin, authManager, authResetToken }
+module.exports = { auth, authAdmin, authManager }

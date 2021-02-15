@@ -12,24 +12,11 @@ const UserSchema = new mongoose.Schema ({
     password: {
         type: String,
         required: true,
-        // validate: {
-        //     validator: function (string) {
-        //         //Password is minimum 8 chars, contains 1 capital letter, 1 small letter, 1 unique char
-        //         var regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
-        //         return regex.test(string)
-        //     }
-        // }
     },
     email: {
         type: String,
         unique: true,
         immutable: false,
-        validate: {
-            validator: function (string) {
-                var regex = /@e.ntu.edu.sg|@ntu.edu.sg$/
-                return regex.test(string)
-            },
-        }
     },
     tokens: [{
         token: {
@@ -72,6 +59,9 @@ UserSchema.pre('save', async function (next) {
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8)
     }
+    if (user.isModified('email')) {
+        user.email = user.email.toLowerCase()
+    }
     next()
 })
 
@@ -100,7 +90,7 @@ UserSchema.methods.getAuthToken = async function () {
 UserSchema.methods.getResetCode = async function () {
     const user = this
     const code = Math.floor(Math.random()*900000+100000)
-    const token = jwt.sign({email: user.email, resetCode: code},process.env.FORGET_PASS_PRIVATE_KEY,{expiresIn: '5m'})
+    const token = jwt.sign({email: user.email, resetCode: code },process.env.FORGET_PASS_PRIVATE_KEY,{expiresIn: '5m'})
     user.resetToken = token
     await user.save()
     return { code, token }

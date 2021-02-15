@@ -24,7 +24,7 @@ const { getPastEvents,
     pastEventReview,
     getReminders,
     getReminderDetails } = require('../controllers/EventController')
-const { auth, authAdmin, authResetToken } = require('../middleware/auth')
+const { auth, authAdmin } = require('../middleware/auth')
 const router = express.Router()
 
 router.post('/users/login', login)
@@ -37,7 +37,7 @@ router.patch('/users/pushNotificationToken', auth, pushNotificationToken)
 router.post('/users/forget', forgetPassword)
 
 //Update Password (for Forget Password)
-router.post('/users/forget/update', authResetToken, updatePassword)
+router.post('/users/forget/update', updatePassword)
 router.patch('/users/forget/resetToken', nullifyResetToken)
 
 //Retrieve user profile (all types of users)
