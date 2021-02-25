@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const multer = require('multer')
 const sharp = require('sharp')
+const fs = require('fs')
 const { sendPushNotification } = require('../utilities/PushNotification')
 const AWS = require('aws-sdk')
 const Announcement = require('../models/AnnouncementModel')
@@ -10,7 +11,10 @@ const { pushNotificationToken } = require('./UserController')
 exports.getAnnouncements = async (req,res) => {
     try {
         const joinedCCAid = await CCA.getJoinedCCA(req.user._id)
-        const announcementCollection = await Announcement.find({visibility: {$in: [...joinedCCAid, null]}, done: false}).populate('organizer')
+        const announcementCollection = await Announcement
+        .find({visibility: {$in: [...joinedCCAid, null]}, done: false})
+        .sort({createdAt: -1})
+        .populate('organizer')
         res.send(announcementCollection)
     } catch (e) {
         res.status(400).send ('Announcement not found')
@@ -134,7 +138,6 @@ exports.deleteImage = async (req,res) => {
         res.send(announcement)
     } catch (err) {
         res.status(400).send(err)
-        console.log(err)
     }
 } 
 exports.editAnnouncement = async (req,res) => {

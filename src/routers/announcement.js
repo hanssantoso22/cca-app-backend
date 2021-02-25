@@ -8,7 +8,7 @@ const { getAnnouncements,
     deleteAnnouncement,
     deleteImage,
     markAnnouncementObsolete,
-    pushNotificationList} = require('../controllers/AnnouncementController')
+    pushNotificationList } = require('../controllers/AnnouncementController')
 const { auth } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()

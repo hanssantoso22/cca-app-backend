@@ -1,0 +1,16 @@
+[
+  '{{repeat(30,50)}}',
+  {
+    _id: '{{objectId()}}',
+    announcementTitle: '{{lorem(7,"words")}}',
+    organizer: '{{random("60364dee566a37198b550eda","60366be0566a37198b550ee5","60367a13d5be5a213d2e4eff","60367a93d5be5a213d2e4f00","60367b91d5be5a213d2e4f01")}}',
+    visibility: function (tags) {
+      var choices = [this.organizer,null];
+      var randomNum = tags.integer(0,choices.length - 1);
+      return choices[randomNum];
+    },
+    content:'{{lorem(3, "paragraphs")}}',
+    image: null,
+    done: '{{bool()}}'
+  }
+]

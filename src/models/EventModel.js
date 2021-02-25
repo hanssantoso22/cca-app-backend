@@ -45,7 +45,6 @@ const EventSchema = mongoose.Schema ({
         type: Boolean,
         default: false
     },
-    link: String,
     description: {
         type: String,
     },

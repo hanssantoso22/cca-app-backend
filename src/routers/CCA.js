@@ -13,7 +13,8 @@ const { listCCA,
   getPastEvents,
   getPastAnnouncements, 
   getArchivedAnnouncements,
-  getArchivedEvents} = require('../controllers/CCAController')
+  getArchivedEvents,
+  CCADetailsPublic} = require('../controllers/CCAController')
 const { auth, authAdmin } = require('../middleware/auth')
 
 //Admin access only
@@ -35,5 +36,6 @@ router.get("/CCA/:id/archivedAnnouncements", auth, getArchivedAnnouncements)
 
 //General user access
 router.get("/CCAs/all/names", auth, listCCA)
+router.get("/CCA/:id/detail", auth, CCADetailsPublic)
 
 module.exports = router

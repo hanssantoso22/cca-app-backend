@@ -42,7 +42,7 @@ exports.getEvent = async (req,res) => {
         const joinedCCA = joinedCCAid.map((cca) => cca.toString())
         const eventDetails = await Event.findOne({
             _id: mongoose.Types.ObjectId(req.params.id),
-        })
+        }).populate('organizer')
         const eventObject = eventDetails.toObject()
         //To check if user has registered for the event
         const PastEvent = require('../models/PastEventModel')
@@ -162,6 +162,7 @@ exports.createEvent = async (req,res) => {
         await newEvent.save()
         res.send(newEvent)
     } catch (e) {
+        console.log(e)
         res.status(400).send(e)
     }
 }
@@ -278,6 +279,7 @@ exports.getPastEvents = async (req,res) => {
         const events = pastEvents.filter(item => item.event.done == true)
         res.send(events)
     } catch (e) {
+        console.log(e)
         res.status(400).send('Event not found')
     }
 }

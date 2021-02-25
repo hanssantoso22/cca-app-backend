@@ -54,6 +54,18 @@ exports.CCADetails = async (req,res) => {
         res.status(400).send()
     }
 }
+exports.CCADetailsPublic = async (req,res) => {
+    try {
+        const CCADetail = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id)})
+        const CCAObject = CCADetail.toObject()
+        delete CCAObject.managers
+        delete CCAObject.members
+        delete CCAObject.color
+        res.send(CCAObject)
+    } catch (e) {
+        res.status(400).send()
+    }
+}
 exports.deleteCCA = async (req,res) => {
     try {
         const findCCA = await CCA.findOne({_id: mongoose.Types.ObjectId(req.params.id)})

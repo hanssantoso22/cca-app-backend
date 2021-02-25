@@ -1,0 +1,35 @@
+[
+  '{{repeat(15,20)}}',
+  {
+    _id: '{{objectId()}}',
+    eventName: '{{lorem(7,"words")}}',
+    organizer: '{{random("60364dee566a37198b550eda","60366be0566a37198b550ee5","60367a13d5be5a213d2e4eff","60367a93d5be5a213d2e4f00","60367b91d5be5a213d2e4f01")}}',
+    visibility: function (tags) {
+      var choices = [this.organizer,null];
+      var randomNum = tags.integer(0,choices.length - 1);
+      return choices[randomNum];
+    },
+    allowedParticipants: function (tags) {
+      var choices = [this.visibility,null];
+      var randomNum = tags.integer(0,choices.length - 1);
+      return choices[randomNum];
+    },
+    startTime: '{{date(new Date(2021, 1, 24), new Date(2021, 2, 31), "YYYY-MM-ddThh:mm:ss")}}',
+    endTime: function () {
+      var startTime = new Date(this.startTime);
+      var offset = startTime.getTimezoneOffset()*60*1000;
+      var withOffset = startTime.getTime();
+      var withoutOffset = withOffset - offset;
+      var newTime = withoutOffset+(2*60*60*1000);
+      
+      return new Date(newTime).toISOString();
+    },
+    description:'{{lorem(2, "paragraphs")}}',
+    image: null,
+    link: '{{random("www.zoom.com","")}}',
+    venue: function (){
+      if (this.link === "") return "NTU";
+      else return "";
+  }
+  }
+]
