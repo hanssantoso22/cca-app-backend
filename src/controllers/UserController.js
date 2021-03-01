@@ -79,7 +79,7 @@ exports.forgetPassword = async(req,res)=> {
             try {
                 res.send({ body,resetCode, resetToken })
             }
-            catch {
+            catch (err) {
                 res.status(400).send(error)
             }
         });
