@@ -84,7 +84,7 @@ exports.forgetPassword = async(req,res)=> {
             }
         });
 
-    } catch (err) {
+    } catch (e) {
         res.status(400).send('Unsuccessful!')
     }
 }
