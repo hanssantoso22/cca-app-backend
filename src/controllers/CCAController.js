@@ -42,13 +42,7 @@ exports.retrieveCCAs = async (req,res)=>{
 }
 exports.CCADetails = async (req,res) => {
     try {
-        const CCADetail = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id)})
-        await CCADetail.populate({
-            path: 'managers'
-        }).execPopulate()
-        await CCADetail.populate({
-            path: 'members'
-        }).execPopulate()
+        const CCADetail = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id)}).populate('managers').populate('members').populate('maincomms').populate('executives')
         res.send(CCADetail)
     } catch (e) {
         res.status(400).send()
@@ -118,7 +112,7 @@ exports.editCCA = async (req,res)=> {
         const currentCCA = await CCA.findOne({_id:mongoose.Types.ObjectId(req.params.id)})
         const currentMembers = currentCCA.members.map(item => item.toString())
         //Add managers as members
-        currentCCA.members = [...new Set([...currentMembers,...req.body.managers])]
+        currentCCA.members = [...new Set([...currentMembers,...req.body.managers, ...req.body.executives, ...req.body.maincomms])]
         await currentCCA.save()
         newManagers.forEach(async (manager)=>{
             const user = await User.findOne({_id:manager})
@@ -131,6 +125,7 @@ exports.editCCA = async (req,res)=> {
     }
     catch (e) {
       res.status(404).send('Error')
+      console.log(e)
     }
 }
 //Note for reset managers: after being reset, the managers will still exist as members
@@ -157,6 +152,28 @@ exports.resetManager = async (req,res)=> {
       res.status(404).send('Error')
     }
 }
+exports.resetExco = async (req,res)=> {
+    try {
+      const findCCA = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id) })
+      findCCA.executives = []
+      await findCCA.save()
+      res.send(findCCA)
+    }
+    catch (e) {
+      res.status(404).send('Error')
+    }
+}
+exports.resetMaincomm = async (req,res)=> {
+    try {
+      const findCCA = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id) })
+      findCCA.maincomms = []
+      await findCCA.save()
+      res.send(findCCA)
+    }
+    catch (e) {
+      res.status(404).send('Error')
+    }
+}
 //To reset both CCA members and managers
 exports.resetMember = async (req,res) => {
     try {
@@ -164,6 +181,8 @@ exports.resetMember = async (req,res) => {
         const previousManagers = [...findCCA.managers]
         findCCA.members = []
         findCCA.managers = []
+        findCCA.executives = []
+        findCCA.maincomms = []
         await findCCA.save()
         previousManagers.forEach(async (manager)=>{
             const user = await User.findOne({ _id: mongoose.Types.ObjectId(manager) })
@@ -180,6 +199,44 @@ exports.resetMember = async (req,res) => {
     } catch (err) {
         console.log(err)
         res.status(400).send('Reset member failed')
+    }
+}
+//To wind up a committee in an academic year
+exports.endCommittee = async (req, res) => {
+    try {
+        const CCAArchive = require('../models/CCAArchiveModel')
+        const findCCA = await CCA.findOne({ _id: mongoose.Types.ObjectId(req.params.id) })
+        const previousManagers = [...findCCA.managers]
+        const newRecord = new CCAArchive({
+            ccaName: findCCA.ccaName,
+            ccaDescription: findCCA.description,
+            executives: findCCA.executives,
+            maincomms: findCCA.maincomms,
+            members: findCCA.members,
+            start: req.body.start,
+            end: req.body.end
+        })
+        await newRecord.save()
+        findCCA.members = []
+        findCCA.managers = []
+        findCCA.executives = []
+        findCCA.maincomms = []
+        await findCCA.save()
+        previousManagers.forEach(async (manager)=>{
+            const user = await User.findOne({ _id: mongoose.Types.ObjectId(manager) })
+            const managedCCAs = await CCA.findOne ({
+                managers: mongoose.Types.ObjectId(user._id)
+            })
+            console.log(managedCCAs)
+            if (!managedCCAs) {
+                user.role = 'student'
+                await user.save()
+            }
+        })
+        res.send(findCCA)
+    } catch (err) {
+        console.log(err)
+        res.status(400).send('Reset committee failed')
     }
 }
 //Get events marked as not done

@@ -14,7 +14,10 @@ const { listCCA,
   getPastAnnouncements, 
   getArchivedAnnouncements,
   getArchivedEvents,
-  CCADetailsPublic} = require('../controllers/CCAController')
+  CCADetailsPublic,
+  endCommittee,
+  resetExco,
+  resetMaincomm } = require('../controllers/CCAController')
 const { auth, authAdmin } = require('../middleware/auth')
 
 //Admin access only
@@ -25,6 +28,9 @@ router.delete("/CCA/:id/delete", auth, authAdmin, deleteCCA)
 router.patch("/CCA/:id/edit", auth, authAdmin, editCCA)
 router.patch("/CCA/:id/resetManager", auth, authAdmin, resetManager)
 router.patch("/CCA/:id/resetMember", auth, authAdmin, resetMember)
+router.patch("/CCA/:id/resetExco", auth, authAdmin, resetExco)
+router.patch("/CCA/:id/resetMaincomm", auth, authAdmin, resetMaincomm)
+router.patch("/CCA/:id/endCommittee", auth, authAdmin, endCommittee)
 
 //Manager access only
 router.get("/CCA/:id/viewMembers", auth,viewCCAMembers)

@@ -129,7 +129,7 @@ exports.registerEvent = async (req, res) => {
         //Add user to registeredApplicants array
         const event = await Event.findOne({
             _id: mongoose.Types.ObjectId(req.params.id)
-        })
+        }).populate('organizer')
         event.participants = event.participants.concat (req.user._id)
         await event.save()
 
@@ -137,7 +137,9 @@ exports.registerEvent = async (req, res) => {
         const newPastEvent = new PastEvent({
             user: req.user._id,
             event: req.params.id,
-            organizer: event.organizer
+            eventName: event.name,
+            organizer: event.organizer._id,
+            organizerName: event.organizer.ccaName
         })
         await newPastEvent.save()
         res.send(event)

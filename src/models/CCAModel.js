@@ -17,7 +17,15 @@ const CCASchema = mongoose.Schema ({
     color: {
         type: String,
     },
-    description: String
+    description: String,
+    executives: [{
+        type: ObjectID,
+        ref: 'UserModel'
+    }],
+    maincomms: [{
+        type: ObjectID,
+        ref: 'UserModel'
+    }],
 }, {
     collection: 'ccas'
 })

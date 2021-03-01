@@ -305,10 +305,13 @@ exports.deleteUser = async (req,res) => {
 }
 exports.pastEvent = async (req,res) => {
     try {
-        await req.user.populate({
-            path:'pastEvents'
-        }).execPopulate()
-        res.send(req.user.pastEvents)
+        const PastEvent = require ('../models/PastEventModel')
+        const pastEvents = await PastEvent.find({user: mongoose.Types.ObjectId(req.user._id)}).sort({start: -1}).populate('event').populate('organizer')
+        const CCAArchive = require('../models/CCAArchiveModel')
+        const pastCCA = await CCAArchive.find({
+            $or: [{members: mongoose.Types.ObjectId(req.user._id)},{executives: mongoose.Types.ObjectId(req.user._id)},{maincomms: mongoose.Types.ObjectId(req.user._id)}]
+        }).populate('members').populate('executives').populate('maincomms')
+        res.send({pastEvents, pastCCAs: pastCCA})
     } catch (e) {
         res.status(400).send('Error happened')
     }

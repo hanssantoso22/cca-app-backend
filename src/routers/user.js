@@ -17,7 +17,8 @@ const { login,
     changeAvatar,
     getManagedCCA,
     nullifyResetToken,
-    pushNotificationToken} = require('../controllers/UserController')
+    pushNotificationToken,
+    pastEvent} = require('../controllers/UserController')
 const { getPastEvents,
     pastEventDetails,
     pastEventNotAttended,
@@ -60,7 +61,7 @@ router.get('/users', auth, getAllUsers)
 router.get('/users/managedCCAs', auth, getManagedCCA)
 
 //Controller below are defined in EventController
-router.get('/users/pastEvents', auth, getPastEvents)
+router.get('/users/pastEvents', auth, pastEvent)
 router.get('/users/pastEvent/:id', auth, pastEventDetails)
 router.delete('/users/pastEvent/:id/delete', auth, pastEventNotAttended)
 router.patch('/users/pastEvent/:id/submitReview', auth, pastEventReview)
