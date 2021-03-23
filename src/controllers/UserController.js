@@ -127,7 +127,7 @@ exports.nullifyResetToken = async (req,res) => {
 }
 exports.getAllUsers = async (req,res) => {
     try {
-        const users = await User.find({role: {$ne: 'admin'}})
+        const users = await User.find({role: {$ne: 'admin'}}).sort({fname: 1})
         res.send(users)
     }
     catch (e) {

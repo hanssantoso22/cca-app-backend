@@ -33,7 +33,7 @@ exports.createNewCCA = async (req,res)=>{
 }
 exports.retrieveCCAs = async (req,res)=>{
     try {
-        const CCAs = await CCA.find({})
+        const CCAs = await CCA.find({}).sort({ccaName: 1})
         res.send(CCAs)
     } catch (e) {
         res.status(400).send('Retrieve CCA error!')

@@ -40,10 +40,6 @@ const UserSchema = new mongoose.Schema ({
         type: String,
         default: null,
     },
-    pushNotificationToken: {
-        type: String,
-        default: null
-    }
 }, {collection: 'users'})
 
 //Virtuals
