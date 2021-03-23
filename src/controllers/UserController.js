@@ -274,27 +274,6 @@ exports.pushNotificationToken = async (req,res) => {
         res.status(400).send(error)
     }
 }
-// exports.editUser = async (req,res) => {
-//     const userID = req.params.id
-//     const updates = Object.keys(req.body)
-//     const allowedUpdates = ['role','managedCCA']
-//     const isValidOperation = updates.every((update)=>allowedUpdates.includes(update))
-//     if (!isValidOperation) {
-//         return res.status(400).send({ error: 'Invalid updates!' })
-//     }
-//     try {
-//         const updatedUser = await User.findById(userID)
-//         updates.forEach((update)=> updatedUser[update] = req.body[update])
-//         updatedUser.save()
-//         if (!user) {
-//             return res.status(400).send({error:'Update not performed!'})
-//         }
-//         res.send(updatedUser)
-//     }
-//     catch (e) {
-//         res.status(400).send(e)
-//     }
-// }
 exports.deleteUser = async (req,res) => {
     try {
         const deletedUser = await User.deleteOne({_id: mongoose.Types.ObjectId(req.params.id)})
@@ -306,11 +285,12 @@ exports.deleteUser = async (req,res) => {
 exports.pastEvent = async (req,res) => {
     try {
         const PastEvent = require ('../models/PastEventModel')
-        const pastEvents = await PastEvent.find({user: mongoose.Types.ObjectId(req.user._id)}).sort({start: -1}).populate('event').populate('organizer')
+        let pastEvents = await PastEvent.find({user: mongoose.Types.ObjectId(req.user._id)}).sort({start: -1}).populate('event').populate('organizer')
         const CCAArchive = require('../models/CCAArchiveModel')
         const pastCCA = await CCAArchive.find({
             $or: [{members: mongoose.Types.ObjectId(req.user._id)},{executives: mongoose.Types.ObjectId(req.user._id)},{maincomms: mongoose.Types.ObjectId(req.user._id)}]
         }).populate('members').populate('executives').populate('maincomms')
+        pastEvents = pastEvents.filter(item => item.event.done==true)
         res.send({pastEvents, pastCCAs: pastCCA})
     } catch (e) {
         res.status(400).send('Error happened')
